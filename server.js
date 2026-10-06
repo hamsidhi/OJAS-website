@@ -115,7 +115,7 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 module.exports = app;
 
 // Local / traditional hosting: start a server. (On Vercel the app is imported by api/index.js instead.)
-if (require.main === module) {
+if (require.main === module && !process.env.VERCEL) {
   const port = Number(process.env.PORT || 3000);
   seed().then(() => {
     setInterval(() => orders.expireStale().catch((e) => console.error(e)), 10 * 60 * 1000).unref();
