@@ -1,0 +1,56 @@
+<%
+  const qs = (over = {}) => {
+    const p = new URLSearchParams();
+    const o = { q, sort, min: min ?? '', max: max ?? '', color: colors, size: sizes, new: query.new, sale: query.sale, ...over };
+    for (const [k, v] of Object.entries(o)) { if (Array.isArray(v)) v.forEach(x => p.append(k, x)); else if (v !== undefined && v !== null && v !== '') p.set(k, v); }
+    const s = p.toString(); return s ? '?' + s : '';
+  };
+  const base = cat ? '/shop/' + catSlug(cat) : '/shop';
+%>
+<div class="container">
+  <div class="crumbs"><a href="/">Home</a> / <a href="/shop">Shop</a><% if (cat) { %> / <%= cat %><% } %></div>
+  <div class="page-title"><h1><%= heading %></h1><p class="muted"><%= r.total %> product<%= r.total === 1 ? '' : 's' %></p></div>
+  <div class="shop">
+    <aside class="filters" id="filters" aria-label="Filters">
+      <form method="get" action="<%= base %>" id="filterForm">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><b>Filters</b><button type="button" class="link filter-toggle" data-close-filters>Close</button></div>
+        <% if (q) { %><input type="hidden" name="q" value="<%= q %>"><% } %>
+        <% if (sort) { %><input type="hidden" name="sort" value="<%= sort %>"><% } %>
+        <% if (query.new) { %><input type="hidden" name="new" value="1"><% } %><% if (query.sale) { %><input type="hidden" name="sale" value="1"><% } %>
+        <div class="fgroup"><h4>Category</h4><div class="flist">
+          <a href="/shop<%= qs() %>" class="<%= !cat ? 'on' : '' %>">All <span><%= Object.values(counts).reduce((a, b) => a + b, 0) %></span></a>
+          <% categories.forEach(c => { %><a href="/shop/<%= catSlug(c) %><%= qs() %>" class="<%= cat === c ? 'on' : '' %>"><%= c %> <span><%= counts[c] || 0 %></span></a><% }) %>
+        </div></div>
+        <div class="fgroup"><h4>Size</h4><div class="chips"><% facets.sizes.forEach(s => { %><label class="chip"><input type="checkbox" name="size" value="<%= s %>" <%= sizes.includes(s) ? 'checked' : '' %>><span><%= s %></span></label><% }) %></div></div>
+        <div class="fgroup"><h4>Colour</h4><div class="sw"><% facets.colors.forEach(c => { %><label title="<%= c.name %>"><input type="checkbox" name="color" value="<%= c.name %>" aria-label="<%= c.name %>" <%= colors.includes(c.name) ? 'checked' : '' %>><i style="background:<%= c.hex %>"></i></label><% }) %></div></div>
+        <div class="fgroup"><h4>Price (₹)</h4><div class="price-in"><input type="number" name="min" min="0" placeholder="<%= facets.min %>" value="<%= min ?? '' %>" aria-label="Minimum price"><span>–</span><input type="number" name="max" min="0" placeholder="<%= facets.max %>" value="<%= max ?? '' %>" aria-label="Maximum price"></div></div>
+        <button class="btn block" type="submit">Apply filters</button>
+        <p class="center" style="margin:12px 0 0"><a class="link" href="<%= base %>">Clear all</a></p>
+      </form>
+    </aside>
+    <div>
+      <div class="toolbar">
+        <button class="btn ghost sm filter-toggle" data-open-filters>Filters</button>
+        <span class="muted small"><%= r.items.length ? `Showing ${(r.page - 1) * r.per + 1}-${(r.page - 1) * r.per + r.items.length} of ${r.total}` : '' %></span>
+        <form method="get" action="<%= base %>"><% if (q) { %><input type="hidden" name="q" value="<%= q %>"><% } %>
+          <% colors.forEach(c => { %><input type="hidden" name="color" value="<%= c %>"><% }) %><% sizes.forEach(s => { %><input type="hidden" name="size" value="<%= s %>"><% }) %>
+          <% if (min !== null) { %><input type="hidden" name="min" value="<%= min %>"><% } %><% if (max !== null) { %><input type="hidden" name="max" value="<%= max %>"><% } %>
+          <% if (query.new) { %><input type="hidden" name="new" value="1"><% } %><% if (query.sale) { %><input type="hidden" name="sale" value="1"><% } %>
+          <label class="sr" for="sort">Sort by</label>
+          <select id="sort" name="sort" data-autosubmit>
+            <% [['', 'Featured'], ['newest', 'Newest'], ['popular', 'Best selling'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['name', 'Name A-Z']].forEach(([v, l]) => { %><option value="<%= v %>" <%= sort === v ? 'selected' : '' %>><%= l %></option><% }) %>
+          </select>
+        </form>
+      </div>
+      <% if (r.items.length) { %>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr)"><% r.items.forEach(p => { %><%- include('partials/card', { p, wish }) %><% }) %></div>
+        <% if (r.pages > 1) { %><nav class="pager" aria-label="Pages">
+          <% for (let i = 1; i <= r.pages; i++) { %><% if (i === r.page) { %><span class="cur" aria-current="page"><%= i %></span><% } else { %><a href="<%= base %><%= qs({ page: i }) %>"><%= i %></a><% } %><% } %>
+        </nav><% } %>
+      <% } else { %>
+        <div class="empty"><h3>No products found</h3><p class="muted">Try removing some filters or searching for something else.</p><a class="btn" href="/shop">See all products</a></div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>@media (max-width:1100px){.shop .grid{grid-template-columns:repeat(2,1fr)!important}}</style>

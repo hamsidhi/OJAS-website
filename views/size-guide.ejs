@@ -1,0 +1,9 @@
+<div class="container" style="padding-bottom:64px"><div class="prose">
+  <div class="page-title"><h1>Size guide</h1></div>
+  <p>Measure yourself with a soft tape and compare with the chart below. All measurements are body measurements in inches.</p>
+  <table class="spec"><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hips</th></tr>
+    <% chart.forEach(r => { %><tr><td><b><%= r[0] %></b></td><td><%= r[1] %></td><td><%= r[2] || '-' %></td><td><%= r[3] || '-' %></td></tr><% }) %></table>
+  <h2>How to measure</h2>
+  <ul><li><b>Bust:</b> around the fullest part of your chest.</li><li><b>Waist:</b> around the narrowest part of your natural waist.</li><li><b>Hips:</b> around the fullest part of your hips.</li></ul>
+  <p>Between sizes? We recommend sizing up for a relaxed fit or down for a compression feel. Not sure? <a class="link" href="/contact">Ask us</a>.</p>
+</div></div>

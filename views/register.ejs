@@ -1,0 +1,11 @@
+<div class="container"><div class="auth">
+  <h1>Create account</h1>
+  <form method="post" action="/register" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="next" value="<%= next %>">
+    <label class="f" for="n">Full name</label><input id="n" type="text" name="name" required autocomplete="name">
+    <label class="f" for="e" style="margin-top:14px">Email</label><input id="e" type="email" name="email" required autocomplete="email">
+    <label class="f" for="ph" style="margin-top:14px">Mobile (optional)</label><input id="ph" type="tel" name="phone" autocomplete="tel">
+    <label class="f" for="p" style="margin-top:14px">Password</label><input id="p" type="password" name="password" required minlength="8" autocomplete="new-password"><div class="help">At least 8 characters.</div>
+    <button class="btn block" style="margin-top:18px" type="submit">Create account</button>
+  </form>
+  <p class="center">Already registered? <a class="link" href="/login?next=<%= encodeURIComponent(next) %>">Sign in</a></p>
+</div></div>

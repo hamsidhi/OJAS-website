@@ -1,0 +1,104 @@
+<div class="container">
+  <div class="crumbs"><a href="/">Home</a> / <a href="/shop/<%= catSlug(p.category) %>"><%= p.category %></a> / <%= p.name %></div>
+  <div class="pdp" id="pdp" data-pid="<%= p.id %>" data-low="<%= lowAt %>">
+    <div class="gallery">
+      <div class="thumbs" role="tablist" aria-label="Product photos">
+        <% p.images.forEach((u, i) => { %><button type="button" class="<%= i === 0 ? 'on' : '' %>" data-img="<%= u %>" aria-label="Photo <%= i + 1 %>"><img src="<%= u %>" alt="" width="84" height="112"></button><% }) %>
+      </div>
+      <div class="mainimg"><img id="mainImg" src="<%= p.images[0] %>" alt="<%= p.name %>" width="900" height="1200" fetchpriority="high"></div>
+    </div>
+
+    <div>
+      <div class="card-cat"><%= p.category %> &middot; Style <%= p.code %></div>
+      <h1><%= p.name %></h1>
+      <div class="row" style="margin-bottom:10px">
+        <div class="price"><%= money(p.price) %><% if (p.discount >= 5) { %><s><%= money(p.mrp) %></s><span class="off"><%= p.discount %>% off</span><% } %></div>
+      </div>
+      <% if (p.reviewCount) { %><p><a href="#reviews"><%- include('partials/stars', { rating: p.rating }) %> <span class="small muted"><%= p.rating.toFixed(1) %> (<%= p.reviewCount %> review<%= p.reviewCount === 1 ? '' : 's' %>)</span></a></p><% } %>
+      <p class="muted small">Inclusive of all taxes. <% if (Number(settings.free_shipping_over) > 0) { %>Free shipping over <%= money(settings.free_shipping_over) %>.<% } %></p>
+      <p><%= p.description %></p>
+
+      <form id="buyForm" method="post" action="/cart/add">
+        <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="pid" value="<%= p.id %>">
+        <div class="opt-label"><div>Colour: <span id="colorName"><%= p.colors[0].name %></span></div></div>
+        <div class="swatches" role="radiogroup" aria-label="Colour">
+          <% p.colors.forEach((c, i) => { %><label title="<%= c.name %>" data-c="<%= c.name %>"><input type="radio" name="color" value="<%= c.name %>" <%= i === 0 ? 'checked' : '' %> aria-label="<%= c.name %>"><i style="background:<%= c.hex %>"></i></label><% }) %>
+        </div>
+        <div class="opt-label"><div>Size: <span id="sizeName">Select a size</span></div><a href="#" class="link" data-modal="sizeModal">Size guide</a></div>
+        <div class="sizes" role="radiogroup" aria-label="Size">
+          <% p.sizes.forEach(s => { %><label><input type="radio" name="size" value="<%= s %>"><span><%= s %></span></label><% }) %>
+        </div>
+        <div class="stock-note" id="stockNote" aria-live="polite"></div>
+        <div class="buy-row">
+          <div class="qty" aria-label="Quantity"><button type="button" data-q="-1" aria-label="Decrease">−</button><input type="number" name="qty" id="qty" value="1" min="1" max="10" aria-label="Quantity"><button type="button" data-q="1" aria-label="Increase">+</button></div>
+          <button class="btn" type="submit" id="addBtn">Add to bag</button>
+          <button class="btn ghost" type="submit" name="buy" value="1" id="buyBtn">Buy now</button>
+          <button class="heart" type="button" style="position:static;width:48px;height:48px;border:1.5px solid var(--line)" data-wish="<%= p.id %>" aria-label="Save to wishlist"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.400-9-9.200C1.600 7.400 3.600 4 7 4c2 0 3.500 1.100 5 3 1.500-1.900 3-3 5-3 3.400 0 5.400 3.400 4 6.800C19 15.600 12 20 12 20z"/></svg></button>
+        </div>
+      </form>
+
+      <div class="perks">
+        <div><svg><use href="#i-truck"/></svg>Free shipping over <%= money(settings.free_shipping_over) %></div>
+        <div><svg><use href="#i-return"/></svg><%= settings.return_days %>-day easy returns</div>
+        <div><svg><use href="#i-lock"/></svg>Secure online payments</div>
+        <div><svg><use href="#i-chat"/></svg>Cash on Delivery available</div>
+      </div>
+
+      <details class="acc" open><summary>Fabric &amp; details</summary>
+        <table class="spec">
+          <tr><th>Style code</th><td><%= p.code %></td></tr>
+          <tr><th>Composition</th><td><%= p.composition %></td></tr>
+          <% p.extras.forEach(e => { %><tr><th><%= e[0] %></th><td><%= e[1] %></td></tr><% }) %>
+          <tr><th>Sizes</th><td><%= p.sizes.join(', ') %></td></tr>
+          <tr><th>Colours</th><td><%= p.colors.length %> available</td></tr>
+        </table>
+      </details>
+      <details class="acc"><summary>Care</summary><div>Machine wash cold with similar colours, inside out. Do not bleach. Dry flat or tumble dry low. Avoid fabric softener to keep the stretch.</div></details>
+      <details class="acc"><summary>Shipping &amp; returns</summary><div>Orders ship within 1-3 working days. Unworn items with tags can be returned or exchanged within <%= settings.return_days %> days of delivery. <a class="link" href="/shipping-returns">Read the full policy</a>.</div></details>
+    </div>
+  </div>
+
+  <section id="reviews" style="padding-bottom:56px">
+    <h2>Customer reviews</h2>
+    <% if (p.reviewCount) { %>
+      <div class="rating-sum">
+        <div><div style="font-size:2.6rem;font-weight:700"><%= p.rating.toFixed(1) %></div><%- include('partials/stars', { rating: p.rating }) %><div class="small muted"><%= p.reviewCount %> review<%= p.reviewCount === 1 ? '' : 's' %></div></div>
+        <div><% [5, 4, 3, 2, 1].forEach(n => { %><div class="bar"><span><%= n %>★</span><div><i style="width:<%= p.reviewCount ? Math.round(dist[n] / p.reviewCount * 100) : 0 %>%"></i></div><span><%= dist[n] %></span></div><% }) %></div>
+      </div>
+    <% } %>
+    <div class="two" style="grid-template-columns:1.3fr 1fr;gap:32px">
+      <div>
+        <% if (!reviews.length) { %><div class="empty"><p class="muted" style="margin:0">No reviews yet. Be the first to share your experience!</p></div><% } %>
+        <% reviews.forEach(r => { %><div class="rev" style="margin-bottom:14px"><%- include('partials/stars', { rating: r.rating }) %><% if (r.title) { %><h3 style="margin:6px 0 0;font-size:1rem"><%= r.title %></h3><% } %><p><%= r.body %></p><div class="who"><b><%= r.name %></b><% if (r.verified) { %> &middot; <span class="verified">Verified buyer</span><% } %> &middot; <%= new Date(r.created_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></div></div><% }) %>
+      </div>
+      <div class="panel">
+        <h3>Write a review</h3>
+        <% if (!user) { %><p class="muted">Please <a class="link" href="/login?next=/product/<%= p.slug %>">sign in</a> to review this product.</p>
+        <% } else if (myReview) { %><p class="muted">Thanks, you've already reviewed this product<%= myReview.status === 'pending' ? ' (awaiting approval)' : '' %>.</p>
+        <% } else { %>
+        <form method="post" action="/product/<%= p.slug %>/review"><input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% if (bought) { %><p class="verified small">&#10003; You purchased this item. Your review will show a "Verified buyer" badge.</p><% } %>
+          <label class="f">Your rating</label>
+          <div class="star-input"><% [5, 4, 3, 2, 1].forEach(n => { %><input type="radio" id="st<%= n %>" name="rating" value="<%= n %>" required><label for="st<%= n %>" title="<%= n %> stars">★</label><% }) %></div>
+          <label class="f" for="rt" style="margin-top:12px">Title (optional)</label><input id="rt" type="text" name="title" maxlength="100">
+          <label class="f" for="rb" style="margin-top:12px">Your review</label><textarea id="rb" name="body" required minlength="5" maxlength="1500" placeholder="Fit, fabric, comfort, quality..."></textarea>
+          <button class="btn" style="margin-top:12px" type="submit">Submit review</button>
+        </form>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <% if (related.length) { %><section style="padding-bottom:64px"><div class="sec-head"><h2>You may also like</h2></div>
+    <div class="grid"><% related.forEach(x => { %><%- include('partials/card', { p: x, wish: new Set() }) %><% }) %></div></section><% } %>
+</div>
+
+<div class="sticky-bar no-print"><div><b><%= money(p.price) %></b></div><button class="btn" type="button" id="stickyAdd">Add to bag</button></div>
+
+<div class="modal" id="sizeModal" role="dialog" aria-modal="true" aria-label="Size guide"><div class="modal-in">
+  <button class="x" data-close aria-label="Close">&times;</button><h3>Size guide</h3>
+  <p class="muted small">Body measurements in inches. If you are between sizes, we recommend sizing up for a relaxed fit.</p>
+  <table class="spec"><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Hips</th></tr><% sizeChart.forEach(r => { %><tr><td><b><%= r[0] %></b></td><td><%= r[1] %></td><td><%= r[2] || '-' %></td><td><%= r[3] || '-' %></td></tr><% }) %></table>
+</div></div>
+
+<script type="application/json" id="variantData"><%- JSON.stringify(variants).replace(/</g, '\\u003c') %></script>

@@ -1,0 +1,18 @@
+<div class="admin-top"><h1>Coupons</h1></div>
+<div class="two" style="grid-template-columns:1.5fr 1fr">
+  <div class="tbl-wrap"><table class="t"><tr><th>Code</th><th>Discount</th><th>Min order</th><th>Used</th><th>Expires</th><th></th></tr>
+    <% if (!rows.length) { %><tr><td colspan="6" class="muted">No coupons yet.</td></tr><% } %>
+    <% rows.forEach(c => { %><tr><td><b><%= c.code %></b></td><td><%= c.type === 'percent' ? c.value + '%' : money(c.value) %></td><td><%= c.min_order ? money(c.min_order) : '-' %></td><td><%= c.used %><%= c.max_uses ? ' / ' + c.max_uses : '' %></td><td class="small"><%= c.expires_at || 'Never' %></td>
+      <td><div class="row">
+        <form method="post" action="/admin/coupons/<%= encodeURIComponent(c.code) %>/toggle"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="status <%= c.active ? 'delivered' : 'cancelled' %>" style="border:0;cursor:pointer"><%= c.active ? 'Active' : 'Off' %></button></form>
+        <form method="post" action="/admin/coupons/<%= encodeURIComponent(c.code) %>/delete" data-confirm-form="Delete this coupon?"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link small muted" style="font-weight:500">Delete</button></form></div></td></tr><% }) %>
+  </table></div>
+  <form method="post" action="/admin/coupons" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>"><h3>Add / update coupon</h3>
+    <label class="f" for="cc">Code</label><input id="cc" name="code" type="text" required maxlength="30" style="text-transform:uppercase">
+    <label class="f" for="ct" style="margin-top:12px">Type</label><select id="ct" name="type"><option value="percent">Percent off</option><option value="flat">Flat amount off (₹)</option></select>
+    <label class="f" for="cv" style="margin-top:12px">Value</label><input id="cv" name="value" type="number" min="1" required>
+    <label class="f" for="cmn" style="margin-top:12px">Minimum order (₹)</label><input id="cmn" name="min_order" type="number" min="0" value="0">
+    <label class="f" for="cmx" style="margin-top:12px">Max total uses (0 = unlimited)</label><input id="cmx" name="max_uses" type="number" min="0" value="0">
+    <label class="f" for="cex" style="margin-top:12px">Expiry date (optional)</label><input id="cex" name="expires_at" type="date">
+    <button class="btn block" style="margin-top:16px">Save coupon</button></form>
+</div>

@@ -1,0 +1,52 @@
+<% const isNew = !p; %>
+<div class="admin-top"><h1><%= isNew ? 'New product' : p.name %></h1><div class="row"><a class="btn ghost sm" href="/admin/products">&larr; Back</a><% if (!isNew) { %><a class="btn ghost sm" href="/product/<%= p.slug %>" target="_blank" rel="noopener">View on store</a><% } %></div></div>
+<form method="post" action="/admin/products/save?_csrf=<%= csrf %>" enctype="multipart/form-data">
+  <input type="hidden" name="id" value="<%= isNew ? '' : p.id %>">
+  <div class="two">
+    <div>
+      <div class="panel"><h3>Details</h3>
+        <div class="form-grid">
+          <div class="full"><label class="f" for="name">Product name</label><input id="name" name="name" type="text" required maxlength="120" value="<%= p ? p.name : '' %>"></div>
+          <div><label class="f" for="code">Style code</label><input id="code" name="code" type="text" required maxlength="40" value="<%= p ? p.code : '' %>"></div>
+          <div><label class="f" for="category">Category</label><select id="category" name="category" required><option value="">Select</option><% categories.forEach(c => { %><option <%= p && p.category === c ? 'selected' : '' %>><%= c %></option><% }) %></select></div>
+          <div class="full"><label class="f" for="description">Description</label><textarea id="description" name="description" maxlength="2000"><%= p ? p.description : '' %></textarea></div>
+          <div class="full"><label class="f" for="composition">Fabric composition</label><input id="composition" name="composition" type="text" maxlength="200" value="<%= p ? p.composition : '' %>" placeholder="82.5% Polyester, 17.5% Elastane"></div>
+          <div class="full"><label class="f" for="extras">Extra fabric lines (optional)</label><textarea id="extras" name="extras" style="min-height:60px" placeholder="Mesh: 94% Polyester, 6% Elastane&#10;Lining: 94.5% Polyester, 5.5% Elastane"><%= p ? p.extras.map(e => e[0] + ': ' + e[1]).join('\n') : '' %></textarea></div>
+        </div></div>
+
+      <div class="panel"><h3>Colours &amp; sizes</h3>
+        <label class="f" for="colors">Colours (one per line: name and hex code)</label>
+        <textarea id="colors" name="colors" style="min-height:140px;font-family:monospace" required placeholder="Black #111111&#10;Dusty Rose #ae6a7f"><%= p ? p.colors.map(c => c.name + ' ' + c.hex).join('\n') : '' %></textarea>
+        <div class="help">Hex code is the swatch colour shown to customers, e.g. #2e3561.</div>
+        <label class="f" for="sizes" style="margin-top:14px">Sizes (comma separated)</label>
+        <input id="sizes" name="sizes" type="text" required value="<%= p ? p.sizes.join(', ') : 'S, M, L, XL, XXL' %>">
+        <% if (isNew) { %><label class="f" for="ds" style="margin-top:14px">Starting stock per colour/size</label><input id="ds" name="default_stock" type="number" min="0" value="10" style="max-width:140px"><div class="help">You can fine-tune stock for each combination after saving.</div><% } %>
+      </div>
+
+      <% if (!isNew) { %><div class="panel"><h3>Stock by colour &amp; size</h3>
+        <div class="stock-grid"><table><tr><th></th><% p.sizes.forEach(s => { %><th><%= s %></th><% }) %></tr>
+          <% p.colors.forEach((c, ci) => { %><tr><th style="text-align:left;white-space:nowrap"><span class="dot" style="background:<%= c.hex %>"></span> <%= c.name %></th>
+            <% p.sizes.forEach((s, si) => { %><td><input type="number" min="0" name="stock_<%= ci %>_<%= si %>" value="<%= stock[c.name + '|' + s] ?? 0 %>" aria-label="<%= c.name %> <%= s %> stock"></td><% }) %></tr><% }) %>
+        </table></div><div class="help">If you change the colour or size lists above, save first, then edit this grid.</div></div><% } %>
+    </div>
+
+    <div>
+      <div class="panel"><h3>Pricing &amp; visibility</h3>
+        <label class="f" for="price">Selling price (₹)</label><input id="price" name="price" type="number" min="1" required value="<%= p ? p.price : '' %>">
+        <label class="f" for="mrp" style="margin-top:12px">MRP / compare-at price (₹, optional)</label><input id="mrp" name="mrp" type="number" min="0" value="<%= p && p.mrp ? p.mrp : '' %>">
+        <div class="help">If MRP is higher than the price, a discount badge is shown.</div>
+        <div style="margin-top:16px;display:grid;gap:10px">
+          <label class="check"><input type="checkbox" name="active" value="1" <%= !p || p.active ? 'checked' : '' %>> Visible on store</label>
+          <label class="check"><input type="checkbox" name="featured" value="1" <%= p && p.featured ? 'checked' : '' %>> Featured on home page</label>
+          <label class="check"><input type="checkbox" name="is_new" value="1" <%= p && p.is_new ? 'checked' : '' %>> Show "New" badge</label>
+        </div></div>
+      <div class="panel"><h3>Photos</h3>
+        <% if (!isNew && p.imageRows.length) { %><div class="imgs-edit"><% p.imageRows.forEach(i => { %><figure><img src="<%= i.url %>" alt=""><label class="check small" style="margin-top:4px"><input type="checkbox" name="delete_img" value="<%= i.id %>"> Delete</label><input type="number" name="pos_<%= i.id %>" value="<%= i.position %>" aria-label="Order" style="padding:4px 6px;margin-top:4px"></figure><% }) %></div><div class="help">Lowest number is the main photo.</div><% } %>
+        <label class="f" for="images" style="margin-top:14px">Add photos (JPG, PNG, WebP, max 6MB each)</label>
+        <input id="images" type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple>
+      </div>
+      <button class="btn block" type="submit">Save product</button>
+      <% if (!isNew) { %><button class="btn danger block" style="margin-top:10px" type="submit" formaction="/admin/products/<%= p.id %>/delete?_csrf=<%= csrf %>" formnovalidate data-confirm="Delete this product? Products with past orders are hidden instead.">Delete product</button><% } %>
+    </div>
+  </div>
+</form>

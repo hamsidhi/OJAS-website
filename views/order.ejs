@@ -1,0 +1,54 @@
+<div class="container" style="padding-bottom:64px">
+  <% if (placed && o.status !== 'cancelled') { %>
+    <div class="panel center no-print" style="margin-top:24px;background:var(--teal-l);border-color:#bfd6d2">
+      <h1 style="margin-bottom:6px">Thank you, <%= (o.name || '').split(' ')[0] %>! &#127881;</h1>
+      <p style="margin:0">Your order <b><%= o.number %></b> is confirmed. A confirmation has been sent to <b><%= o.email %></b>.</p>
+    </div>
+  <% } %>
+  <div class="page-title" style="padding-top:24px"><div class="row" style="justify-content:space-between">
+    <div><h1 style="margin-bottom:4px">Order <%= o.number %></h1><span class="muted small">Placed on <%= new Date(o.created_at + 'Z').toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %></span></div>
+    <div class="row no-print"><span class="status <%= o.status %>"><%= ORDER_STATUS[o.status] %></span><span class="status <%= o.payment_status %>"><%= PAY_STATUS[o.payment_status] %></span><button class="btn ghost sm" type="button" data-print>Print invoice</button></div>
+  </div></div>
+
+  <% if (o.status === 'pending' && o.payment_status === 'pending' && o.payment_method !== 'cod') { %>
+    <div class="flash error no-print">Payment for this order is not complete yet. Please finish payment to confirm it. Unpaid orders are released after about 45 minutes.
+      <div class="btn-row" style="margin-top:10px"><a class="btn sm" href="/pay/<%= o.number %>">Complete payment</a>
+        <form method="post" action="/order/<%= o.number %>/cancel"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn ghost sm" type="submit">Cancel order</button></form></div></div>
+  <% } %>
+
+  <% if (o.status === 'cancelled') { %>
+    <div class="flash error">This order was cancelled.<% if (o.payment_status === 'paid') { %> If you were charged, the refund will be processed shortly.<% } else if (o.payment_status === 'refunded') { %> Your payment has been refunded.<% } %></div>
+  <% } else { %>
+    <% const flow = ['processing', 'shipped', 'delivered']; const idx = flow.indexOf(o.status); %>
+    <div class="steps no-print" aria-label="Order progress">
+      <div class="step <%= o.status !== 'pending' ? 'done' : '' %>"><i>1</i>Order placed</div>
+      <div class="step <%= idx >= 0 ? 'done' : '' %>"><i>2</i>Processing</div>
+      <div class="step <%= idx >= 1 ? 'done' : '' %>"><i>3</i>Shipped</div>
+      <div class="step <%= idx >= 2 ? 'done' : '' %>"><i>4</i>Delivered</div>
+    </div>
+    <% if (o.carrier || o.tracking_no) { %><div class="panel no-print"><b>Shipment:</b> <%= o.carrier || 'Courier' %><% if (o.tracking_no) { %> &middot; Tracking no. <b><%= o.tracking_no %></b><% } %></div><% } %>
+  <% } %>
+
+  <div class="cart-grid" style="padding-bottom:0">
+    <div class="panel">
+      <h3>Items</h3>
+      <% items.forEach(i => { %><div class="mini"><% if (i.image) { %><img src="<%= i.image %>" alt="" width="52" height="69"><% } %><div class="n"><%= i.name %><div class="muted small"><%= i.color %> / <%= i.size %> &times; <%= i.qty %> &middot; Style <%= i.code %></div></div><b><%= money(i.price * i.qty) %></b></div><% }) %>
+    </div>
+    <div>
+      <div class="panel">
+        <h3>Summary</h3>
+        <div class="sum-row"><span>Subtotal</span><span><%= money(o.subtotal) %></span></div>
+        <% if (o.discount) { %><div class="sum-row"><span>Discount <%= o.coupon ? '(' + o.coupon + ')' : '' %></span><span>-<%= money(o.discount) %></span></div><% } %>
+        <div class="sum-row"><span>Shipping</span><span><%= o.shipping ? money(o.shipping) : 'Free' %></span></div>
+        <% if (o.cod_fee) { %><div class="sum-row"><span>COD fee</span><span><%= money(o.cod_fee) %></span></div><% } %>
+        <div class="sum-row total"><span>Total</span><span><%= money(o.total) %></span></div>
+        <p class="small muted">Payment: <%= PAY_METHOD[o.payment_method] || o.payment_method %></p>
+      </div>
+      <div class="panel">
+        <h3>Delivery address</h3>
+        <p style="margin:0"><b><%= ship.name %></b><br><%= ship.line1 %><% if (ship.line2) { %>, <%= ship.line2 %><% } %><br><%= ship.city %>, <%= ship.state %> <%= ship.pincode %><br>Phone: <%= ship.phone %></p>
+      </div>
+    </div>
+  </div>
+  <p class="muted small no-print">Need help with this order? <a class="link" href="/contact">Contact us</a> and quote <b><%= o.number %></b>.</p>
+</div>

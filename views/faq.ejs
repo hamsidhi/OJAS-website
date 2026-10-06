@@ -1,0 +1,15 @@
+<div class="container" style="padding-bottom:64px"><div class="narrow" style="margin:0">
+  <div class="page-title"><h1>Frequently asked questions</h1></div>
+  <% const faqs = [
+    ['How do I find my size?', 'Check our <a class="link" href="/size-guide">size guide</a> and compare it to your body measurements. If you are between sizes we suggest sizing up for a relaxed fit. Most styles come in S to XXL; many go up to XXXL.'],
+    ['Which payment methods do you accept?', 'We accept UPI, debit and credit cards, netbanking and wallets through a secure payment gateway, plus Cash on Delivery on eligible orders.'],
+    ['How long does delivery take?', 'Orders are packed within 1-3 working days. Delivery usually takes 3-7 working days depending on your location. You will get an email with tracking details once your order ships.'],
+    ['Can I return or exchange an item?', 'Yes. Unworn, unwashed items with tags can be returned or exchanged within ' + settings.return_days + ' days of delivery. See our <a class="link" href="/shipping-returns">shipping &amp; returns</a> page.'],
+    ['How do I track my order?', 'Use the <a class="link" href="/track">Track order</a> page with your order number and email, or sign in to see all of your orders.'],
+    ['The colour or size I want is sold out. What can I do?', 'Stock changes quickly. Contact us and we will tell you when it is back in stock.'],
+    ['Is Cash on Delivery available?', 'Yes, on most orders' + (Number(settings.cod_fee) ? ' for an additional fee of ' + money(settings.cod_fee) : '') + '. You will see the option at checkout.'],
+    ['How should I wash my activewear?', 'Machine wash cold, inside out, with similar colours. Avoid bleach and fabric softener, and dry flat or tumble dry low to keep the stretch.'],
+  ]; %>
+  <% faqs.forEach(f => { %><details class="faq"><summary><%= f[0] %></summary><div><%- f[1] %></div></details><% }) %>
+  <p style="margin-top:24px">Still need help? <a class="link" href="/contact">Contact us</a>.</p>
+</div></div>

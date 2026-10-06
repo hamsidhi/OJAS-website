@@ -1,0 +1,10 @@
+<div class="container"><div class="auth">
+  <h1>Track your order</h1>
+  <p class="muted">Enter your order number and the email you used at checkout.</p>
+  <form method="post" action="/track" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label class="f" for="n">Order number</label><input id="n" type="text" name="number" value="<%= number %>" placeholder="e.g. OJ2610061234" required>
+    <label class="f" for="e" style="margin-top:14px">Email</label><input id="e" type="email" name="email" required value="<%= user ? user.email : '' %>">
+    <button class="btn block" style="margin-top:18px" type="submit">Track order</button>
+  </form>
+  <% if (user) { %><p class="center small"><a class="link" href="/account">View all my orders</a></p><% } %>
+</div></div>

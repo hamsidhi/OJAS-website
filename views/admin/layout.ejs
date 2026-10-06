@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title><%= title %> | Admin</title><link rel="icon" href="/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css?v=1">
+</head><body data-csrf="<%= csrf %>">
+<%- include('../partials/icons') %>
+<div class="admin">
+  <aside class="admin-side">
+    <img src="/img/logo-word-light.png" alt="<%= settings.store_name %>">
+    <% const nav = [['/admin', 'Dashboard'], ['/admin/orders', 'Orders'], ['/admin/products', 'Products'], ['/admin/customers', 'Customers'], ['/admin/reviews', 'Reviews'], ['/admin/messages', 'Messages'], ['/admin/coupons', 'Coupons'], ['/admin/settings', 'Settings']]; %>
+    <% nav.forEach(n => { const on = n[0] === '/admin' ? path === '/admin' || path === '/admin/' : path.startsWith(n[0]); %><a href="<%= n[0] %>" class="<%= on ? 'on' : '' %>"><%= n[1] %></a><% }) %>
+    <hr style="border:0;border-top:1px solid rgba(255,255,255,.15);margin:14px 0;width:100%">
+    <a href="/" target="_blank" rel="noopener">View store &rarr;</a>
+    <a href="/account">My account</a>
+    <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link" style="color:#d7e3e1;padding:10px 12px;font-weight:500;text-decoration:none">Sign out</button></form>
+  </aside>
+  <div class="admin-main">
+    <% if (flash) { %><div class="flash <%= flash.type %>" role="status"><%= flash.msg %></div><% } %>
+    <%- body %>
+  </div>
+</div>
+<script src="/js/admin.js?v=1" defer></script>
+</body></html>

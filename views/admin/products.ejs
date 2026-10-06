@@ -1,0 +1,17 @@
+<div class="admin-top"><h1>Products <span class="muted" style="font-size:1rem">(<%= rows.length %>)</span></h1><a class="btn sm" href="/admin/products/new">+ Add product</a></div>
+<p class="muted small">Prices below are starting placeholders. Edit a price directly in the table, or open a product to change stock, colours, sizes and photos.</p>
+<form class="filter-row" method="get"><input type="search" name="q" value="<%= q %>" placeholder="Search name or code" aria-label="Search">
+  <select name="cat" data-autosubmit aria-label="Category"><option value="">All categories</option><% categories.forEach(c => { %><option <%= cat === c ? 'selected' : '' %>><%= c %></option><% }) %></select>
+  <button class="btn ghost sm">Filter</button></form>
+<div class="tbl-wrap"><table class="t">
+  <tr><th></th><th>Product</th><th>Category</th><th>Price / MRP (₹)</th><th>Stock</th><th>Sold</th><th>Status</th><th></th></tr>
+  <% rows.forEach(p => { %><tr>
+    <td><% if (p.images[0]) { %><img class="thumb" src="<%= p.images[0] %>" alt=""><% } %></td>
+    <td><a class="link" href="/admin/products/<%= p.id %>"><%= p.name %></a><div class="muted small"><%= p.code %> &middot; <%= p.colors.length %> colours, <%= p.sizes.length %> sizes</div></td>
+    <td><%= p.category %></td>
+    <td><form method="post" action="/admin/products/<%= p.id %>/quick" class="row"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <input type="number" name="price" value="<%= p.price %>" min="1" style="width:84px;padding:6px 8px" aria-label="Price"><input type="number" name="mrp" value="<%= p.mrp || '' %>" min="0" style="width:84px;padding:6px 8px" aria-label="MRP"><button class="btn ghost sm">Save</button></form></td>
+    <td><%= p.totalStock %></td><td><%= p.sold %></td>
+    <td><form method="post" action="/admin/products/<%= p.id %>/toggle"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="status <%= p.active ? 'delivered' : 'cancelled' %>" style="border:0;cursor:pointer"><%= p.active ? 'Live' : 'Hidden' %></button></form></td>
+    <td><a class="link small" href="/admin/products/<%= p.id %>">Edit</a></td></tr><% }) %>
+</table></div>

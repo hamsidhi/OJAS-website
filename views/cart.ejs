@@ -1,0 +1,55 @@
+<div class="container">
+  <div class="crumbs"><a href="/">Home</a> / Bag</div>
+  <div class="page-title"><h1>Your bag <% if (t.count) { %><span class="muted" style="font-size:1rem;font-weight:500">(<%= t.count %> item<%= t.count === 1 ? '' : 's' %>)</span><% } %></h1></div>
+  <% if (!t.items.length) { %>
+    <div class="empty" style="margin-bottom:64px"><h3>Your bag is empty</h3><p class="muted">Looks like you haven't added anything yet.</p><a class="btn" href="/shop">Start shopping</a></div>
+  <% } else { %>
+  <div class="cart-grid">
+    <div>
+      <% t.items.forEach(i => { %>
+      <div class="line">
+        <a href="/product/<%= i.slug %>"><img src="<%= i.image %>" alt="<%= i.name %>" width="96" height="128"></a>
+        <div>
+          <h4><a href="/product/<%= i.slug %>"><%= i.name %></a></h4>
+          <div class="meta"><span class="dot" style="background:<%= i.swatch %>"></span><%= i.color %> &middot; Size <%= i.size %> &middot; <%= money(i.price) %></div>
+          <% if (i.soldOut) { %><p class="small" style="color:var(--sale);margin:6px 0 0">Sold out. Please remove this item.</p>
+          <% } else { %>
+            <% if (i.short) { %><p class="small" style="color:var(--warn);margin:6px 0 0">Only <%= i.stock %> left. We reduced your quantity.</p><% } %>
+            <form method="post" action="/cart/update" class="row" style="margin-top:10px"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="key" value="<%= i.key %>">
+              <label class="sr" for="q<%= i.key %>">Quantity</label>
+              <select id="q<%= i.key %>" name="qty" data-autosubmit><% for (let n = 1; n <= Math.min(10, i.stock); n++) { %><option value="<%= n %>" <%= n === i.qty ? 'selected' : '' %>>Qty <%= n %></option><% } %></select>
+              <noscript><button class="btn sm ghost">Update</button></noscript>
+            </form>
+          <% } %>
+        </div>
+        <div style="text-align:right"><b><%= money(i.line) %></b>
+          <form method="post" action="/cart/remove"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="key" value="<%= i.key %>"><button class="link small muted" type="submit" style="font-weight:500">Remove</button></form>
+        </div>
+      </div>
+      <% }) %>
+      <p style="margin-top:20px"><a class="link" href="/shop">&larr; Continue shopping</a></p>
+    </div>
+
+    <aside class="summary">
+      <h3>Order summary</h3>
+      <% if (t.freeShipLeft > 0) { %>
+        <div class="small">Add <b><%= money(t.freeShipLeft) %></b> more for free shipping</div>
+        <div class="progress"><i style="width:<%= Math.min(100, Math.round((t.subtotal - t.discount) / Number(settings.free_shipping_over) * 100)) %>%"></i></div>
+      <% } else if (t.shipping === 0) { %><div class="small" style="color:var(--ok);font-weight:600">&#10003; You've unlocked free shipping!</div><% } %>
+      <% if (t.coupon) { %>
+        <form method="post" action="/cart/coupon/remove" class="coupon" style="align-items:center"><input type="hidden" name="_csrf" value="<%= csrf %>">
+          <span class="small" style="flex:1"><b><%= t.coupon.code %></b> applied (<%= t.coupon.label %>)</span><button class="link small">Remove</button></form>
+      <% } else { %>
+        <form method="post" action="/cart/coupon" class="coupon"><input type="hidden" name="_csrf" value="<%= csrf %>"><label class="sr" for="cc">Coupon code</label><input id="cc" name="code" placeholder="Coupon code" maxlength="30"><button class="btn ghost sm" type="submit">Apply</button></form>
+      <% } %>
+      <div class="sum-row"><span>Subtotal</span><span><%= money(t.subtotal) %></span></div>
+      <% if (t.discount) { %><div class="sum-row"><span>Discount</span><span style="color:var(--ok)">-<%= money(t.discount) %></span></div><% } %>
+      <div class="sum-row"><span>Shipping</span><span><%= t.shipping ? money(t.shipping) : '' %><% if (!t.shipping) { %><span class="free">FREE</span><% } %></span></div>
+      <div class="sum-row total"><span>Total</span><span><%= money(t.total) %></span></div>
+      <p class="small muted">Inclusive of all taxes.</p>
+      <% if (t.hasProblem) { %><button class="btn block" disabled>Remove sold-out items to continue</button><% } else { %><a class="btn block" href="/checkout">Proceed to checkout</a><% } %>
+      <p class="small muted center" style="margin:12px 0 0"><svg style="width:14px;height:14px;vertical-align:-2px"><use href="#i-lock"/></svg> Secure checkout</p>
+    </aside>
+  </div>
+  <% } %>
+</div>

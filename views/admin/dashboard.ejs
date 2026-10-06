@@ -1,0 +1,27 @@
+<div class="admin-top"><h1>Dashboard</h1><div class="row"><a class="btn sm" href="/admin/products/new">+ Add product</a><a class="btn ghost sm" href="/admin/orders">All orders</a></div></div>
+
+<% const open = checklist.filter(c => !c.done); %>
+<% if (open.length) { %><div class="panel" style="border-color:#e6d3a8;background:#fffaf0"><h3>Setup checklist <span class="muted small">(<%= checklist.length - open.length %>/<%= checklist.length %> done)</span></h3>
+  <ul class="todo"><% checklist.forEach(c => { %><li class="<%= c.done ? 'done' : '' %>"><span class="ck"><%= c.done ? '✓' : '' %></span><span><%= c.text %><% if (c.link && !c.done) { %> <a class="link small" href="<%= c.link %>">Go</a><% } %></span></li><% }) %></ul></div><% } %>
+
+<div class="stat-grid">
+  <div class="stat"><span>Revenue (30 days)</span><b><%= money(stats.revenue30) %></b><div class="small muted">All time <%= money(stats.revenue) %></div></div>
+  <div class="stat"><span>Orders</span><b><%= stats.orders %></b><div class="small muted"><%= stats.today %> today</div></div>
+  <div class="stat"><span>To ship</span><b><%= stats.toShip %></b><a class="s" href="/admin/orders?status=processing">View &rarr;</a></div>
+  <div class="stat"><span>Customers</span><b><%= stats.customers %></b><a class="s" href="/admin/customers">View &rarr;</a></div>
+  <div class="stat"><span>Active products</span><b><%= stats.products %></b><a class="s" href="/admin/products">Manage &rarr;</a></div>
+  <div class="stat"><span>Low stock variants</span><b><%= stats.lowStock %></b><a class="s" href="/admin/products?low=1">View &rarr;</a></div>
+  <div class="stat"><span>Reviews to approve</span><b><%= stats.pendingReviews %></b><a class="s" href="/admin/reviews">Moderate &rarr;</a></div>
+  <div class="stat"><span>New messages</span><b><%= stats.newMessages %></b><a class="s" href="/admin/messages">Read &rarr;</a></div>
+</div>
+
+<div class="two">
+  <div><h3>Recent orders</h3>
+    <div class="tbl-wrap"><table class="t"><tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th></tr>
+      <% if (!recent.length) { %><tr><td colspan="4" class="muted">No orders yet.</td></tr><% } %>
+      <% recent.forEach(o => { %><tr><td><a class="link" href="/admin/orders/<%= o.number %>"><%= o.number %></a></td><td><%= o.name %></td><td><%= money(o.total) %></td><td><span class="status <%= o.status %>"><%= ORDER_STATUS[o.status] %></span></td></tr><% }) %>
+    </table></div></div>
+  <div><h3>Top sellers</h3>
+    <div class="panel"><% if (!top.length) { %><p class="muted" style="margin:0">Sales will show here.</p><% } %>
+      <% top.forEach(p => { %><div class="sum-row"><a href="/admin/products/<%= p.id %>"><%= p.name %> <span class="muted small"><%= p.code %></span></a><b><%= p.sold %></b></div><% }) %></div></div>
+</div>

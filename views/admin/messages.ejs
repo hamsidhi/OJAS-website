@@ -1,0 +1,9 @@
+<div class="admin-top"><h1>Messages</h1></div>
+<% if (!rows.length) { %><div class="empty"><p class="muted" style="margin:0">No messages yet. Contact-form submissions appear here.</p></div><% } %>
+<% rows.forEach(m => { %><div class="panel" style="<%= m.status === 'new' ? 'border-left:4px solid var(--accent)' : '' %>">
+  <div class="row" style="justify-content:space-between"><div><b><%= m.subject || 'No subject' %></b> <% if (m.status === 'new') { %><span class="status processing">New</span><% } %>
+    <div class="small muted"><%= m.name %> &middot; <a class="link" href="mailto:<%= m.email %>?subject=Re: <%= encodeURIComponent(m.subject || 'Your message') %>"><%= m.email %></a><% if (m.phone) { %> &middot; <%= m.phone %><% } %> &middot; <%= new Date(m.created_at + 'Z').toLocaleString('en-IN') %></div></div>
+    <form method="post" action="/admin/messages/<%= m.id %>" class="row"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <% if (m.status === 'new') { %><button class="btn ghost sm" name="action" value="done">Mark done</button><% } else { %><button class="btn ghost sm" name="action" value="new">Mark new</button><% } %>
+      <button class="btn danger sm" name="action" value="delete" data-confirm="Delete this message?">Delete</button></form></div>
+  <p style="margin:10px 0 0;white-space:pre-wrap"><%= m.body %></p></div><% }) %>

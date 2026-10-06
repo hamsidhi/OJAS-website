@@ -1,0 +1,5 @@
+<div class="container" style="padding-bottom:64px">
+  <div class="page-title"><h1>My wishlist</h1></div>
+  <% if (!items.length) { %><div class="empty"><h3>Nothing saved yet</h3><p class="muted">Tap the heart on any product to save it here.</p><a class="btn" href="/shop">Browse products</a></div>
+  <% } else { %><div class="grid"><% items.forEach(p => { %><%- include('partials/card', { p, wish }) %><% }) %></div><% } %>
+</div>

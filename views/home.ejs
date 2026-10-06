@@ -1,0 +1,69 @@
+<section class="hero">
+  <div class="container hero-in">
+    <div>
+      <span class="eyebrow">New season &middot; Activewear for women</span>
+      <h1>Move freely.<br>Feel effortlessly you.</h1>
+      <p class="lead">Sports bras, leggings, tennis skirts and layers in soft, flattering colours, designed to look as good as they feel.</p>
+      <div class="btn-row"><a class="btn" href="/shop">Shop the collection</a><a class="btn ghost" href="/shop?new=1">New arrivals</a></div>
+    </div>
+    <div class="hero-imgs">
+      <% const h = feat.length >= 2 ? feat : newest; %>
+      <% if (h[0]) { %><img src="<%= h[0].images[0] %>" alt="<%= h[0].name %>" width="600" height="800" fetchpriority="high"><% } %>
+      <% if (h[1]) { %><img src="<%= h[1].images[0] %>" alt="<%= h[1].name %>" width="600" height="800"><% } %>
+    </div>
+  </div>
+</section>
+
+<div class="trust"><div class="container trust-in">
+  <div class="trust-i"><svg><use href="#i-truck"/></svg><div><b>Free shipping</b>On orders over <%= money(settings.free_shipping_over) %></div></div>
+  <div class="trust-i"><svg><use href="#i-return"/></svg><div><b><%= settings.return_days %>-day returns</b>Easy, hassle-free exchanges</div></div>
+  <div class="trust-i"><svg><use href="#i-lock"/></svg><div><b>Secure payments</b>UPI, cards, netbanking &amp; COD</div></div>
+  <div class="trust-i"><svg><use href="#i-chat"/></svg><div><b>We're here to help</b>Chat on WhatsApp or email</div></div>
+</div></div>
+
+<section class="block"><div class="container">
+  <div class="sec-head"><h2>Shop by category</h2><a class="link" href="/shop">View all</a></div>
+  <div class="cats">
+    <% categories.forEach(c => { %>
+      <a class="cat" href="/shop/<%= catSlug(c) %>">
+        <% if (covers[c]) { %><img src="<%= covers[c] %>" alt="" loading="lazy" width="400" height="533"><% } %>
+        <span><%= c %><small><%= counts[c] || 0 %> styles</small></span>
+      </a>
+    <% }) %>
+  </div>
+</div></section>
+
+<section class="block" style="padding-top:0"><div class="container">
+  <div class="sec-head"><div><span class="eyebrow">Just landed</span><h2>New arrivals</h2></div><a class="link" href="/shop?new=1">Shop new</a></div>
+  <div class="grid"><% newest.slice(0, 8).forEach(p => { %><%- include('partials/card', { p, wish: new Set() }) %><% }) %></div>
+</div></section>
+
+<section class="block band"><div class="container split">
+  <div>
+    <span class="eyebrow">Our promise</span>
+    <h2>Designed for every body, every move.</h2>
+    <p>Our stretch fabrics are blends of polyester or nylon with elastane for a smooth, flexible fit. Choose from sizes <b>XS to XXXL</b> across most styles and up to <b>20 colours</b> per style.</p>
+    <p>Matching sets, mix-and-match pieces and lined skorts. Everything you need for yoga, tennis, running or a day out.</p>
+    <div class="btn-row"><a class="btn light" href="/size-guide">Find your size</a><a class="btn ghost" style="color:#fff;border-color:#fff" href="/about">Our story</a></div>
+  </div>
+  <% if (feat[2]) { %><img src="<%= feat[2].images[0] %>" alt="<%= feat[2].name %>" loading="lazy" width="600" height="750"><% } %>
+</div></section>
+
+<section class="block"><div class="container">
+  <div class="sec-head"><div><span class="eyebrow">Customer favourites</span><h2>Best sellers</h2></div><a class="link" href="/shop?sort=popular">Shop best sellers</a></div>
+  <div class="grid"><% best.slice(0, 8).forEach(p => { %><%- include('partials/card', { p, wish: new Set() }) %><% }) %></div>
+</div></section>
+
+<section class="block" style="background:#fff;border-block:1px solid var(--line)"><div class="container">
+  <div class="sec-head"><div><span class="eyebrow">Customer feedback</span><h2>What our customers say</h2>
+    <% if (stats.n) { %><p class="muted" style="margin:0"><%- include('partials/stars', { rating: stats.a }) %> <b><%= (stats.a || 0).toFixed(1) %></b> from <%= stats.n %> review<%= stats.n === 1 ? '' : 's' %></p><% } %></div>
+    <a class="link" href="/feedback">Share your feedback</a></div>
+  <% if (reviews.length) { %>
+  <div class="rev-grid"><% reviews.slice(0, 3).forEach(r => { %>
+    <div class="rev"><%- include('partials/stars', { rating: r.rating }) %><% if (r.title) { %><h3 style="margin:6px 0 0;font-size:1rem"><%= r.title %></h3><% } %><p><%= r.body %></p>
+      <div class="who"><b><%= r.name %></b><% if (r.verified) { %> &middot; <span class="verified">Verified buyer</span><% } %><% if (r.pname) { %> &middot; <a href="/product/<%= r.pslug %>"><%= r.pname %></a><% } %></div></div>
+  <% }) %></div>
+  <% } else { %>
+  <div class="empty"><h3>Be the first to review</h3><p class="muted">Bought something you love? Tell us about it. Your feedback helps other shoppers.</p><a class="btn" href="/feedback">Write a review</a></div>
+  <% } %>
+</div></section>

@@ -1,0 +1,8 @@
+<div class="container"><div class="auth">
+  <h1>Forgot password</h1><p class="muted">Enter your email and we'll send you a link to reset your password.</p>
+  <form method="post" action="/forgot" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label class="f" for="e">Email</label><input id="e" type="email" name="email" required autofocus>
+    <button class="btn block" style="margin-top:18px" type="submit">Send reset link</button>
+  </form>
+  <p class="center"><a class="link" href="/login">Back to sign in</a></p>
+</div></div>

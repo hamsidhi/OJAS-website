@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title><%= title %></title>
+<% if (metaDesc) { %><meta name="description" content="<%= metaDesc %>"><% } %>
+<meta property="og:title" content="<%= title %>">
+<% if (metaDesc) { %><meta property="og:description" content="<%= metaDesc %>"><% } %>
+<% if (ogImage) { %><meta property="og:image" content="<%= baseUrl + ogImage %>"><% } %>
+<meta name="theme-color" content="#315352">
+<link rel="icon" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css?v=1">
+</head>
+<body data-csrf="<%= csrf %>" data-logged="<%= user ? 1 : 0 %>">
+<%- include('partials/icons') %>
+<% if (announcement) { %><div class="announce"><%= announcement %></div><% } %>
+<header class="site-header">
+  <div class="container hdr">
+    <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu"><svg><use href="#i-menu"/></svg></button>
+    <a class="logo" href="/" aria-label="<%= settings.store_name %> home"><img src="/img/logo-word.png" alt="<%= settings.store_name %> - <%= settings.tagline %>" width="110" height="41"></a>
+    <nav class="nav" aria-label="Main">
+      <a href="/shop" class="<%= path === '/shop' && !query.new && !query.sale ? 'on' : '' %>">Shop All</a>
+      <a href="/shop?new=1" class="<%= query.new ? 'on' : '' %>">New In</a>
+      <% categories.forEach(c => { %><a href="/shop/<%= catSlug(c) %>" class="<%= path === '/shop/' + catSlug(c) ? 'on' : '' %>"><%= c %></a><% }) %>
+      <a href="/shop?sale=1" class="sale <%= query.sale ? 'on' : '' %>">Sale</a>
+    </nav>
+    <div class="icons">
+      <button class="icon-btn" id="searchBtn" aria-label="Search"><svg><use href="#i-search"/></svg></button>
+      <a class="icon-btn" href="<%= user ? '/account' : '/login' %>" aria-label="Account"><svg><use href="#i-user"/></svg></a>
+      <a class="icon-btn" href="/wishlist" aria-label="Wishlist"><svg><use href="#i-heart"/></svg></a>
+      <a class="icon-btn" href="/cart" aria-label="Shopping bag"><svg><use href="#i-bag"/></svg><span class="badge" id="cartCount" <%- cartCount ? '' : 'hidden' %>><%= cartCount %></span></a>
+    </div>
+  </div>
+  <div class="searchbar" id="searchbar">
+    <div class="container">
+      <form action="/shop" method="get" role="search"><input type="search" name="q" id="searchInput" placeholder="Search leggings, bras, skirts or style code..." autocomplete="off" aria-label="Search products"><button class="btn" type="submit">Search</button></form>
+      <div class="suggest" id="suggest" hidden><div class="container" id="suggestList"></div></div>
+    </div>
+  </div>
+</header>
+<div class="drawer" id="drawer"><nav aria-label="Mobile menu">
+  <a href="/shop">Shop All</a><a href="/shop?new=1">New In</a>
+  <% categories.forEach(c => { %><a href="/shop/<%= catSlug(c) %>"><%= c %></a><% }) %>
+  <a href="/shop?sale=1">Sale</a><a href="/track">Track Order</a><a href="/contact">Contact</a>
+  <a href="<%= user ? '/account' : '/login' %>"><%= user ? 'My Account' : 'Sign in / Register' %></a>
+</nav></div>
+
+<main id="main">
+<% if (flash) { %><div class="container"><div class="flash <%= flash.type %>" role="status"><%= flash.msg %></div></div><% } %>
+<%- body %>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="foot">
+      <div>
+        <img src="/img/logo-word-light.png" alt="<%= settings.store_name %>" width="116" height="43">
+        <p class="small">Thoughtfully designed activewear for women. Made to move with you, from the studio to the street.</p>
+        <% if (settings.instagram) { %><a class="small" href="<%= settings.instagram %>" target="_blank" rel="noopener">Instagram</a>&nbsp; <% } %>
+        <% if (settings.facebook) { %><a class="small" href="<%= settings.facebook %>" target="_blank" rel="noopener">Facebook</a><% } %>
+        <div class="pay-chips"><span>UPI</span><span>Visa</span><span>Mastercard</span><span>RuPay</span><span>Netbanking</span><span>COD</span></div>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <ul>
+          <li><a href="/shop?new=1">New Arrivals</a></li>
+          <% categories.forEach(c => { %><li><a href="/shop/<%= catSlug(c) %>"><%= c %></a></li><% }) %>
+          <li><a href="/shop?sale=1">Sale</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Help</h4>
+        <ul>
+          <li><a href="/track">Track Your Order</a></li><li><a href="/size-guide">Size Guide</a></li>
+          <li><a href="/shipping-returns">Shipping &amp; Returns</a></li><li><a href="/faq">FAQs</a></li>
+          <li><a href="/feedback">Customer Feedback</a></li><li><a href="/contact">Contact Us</a></li>
+          <li><a href="/about">About Us</a></li><li><a href="/privacy">Privacy Policy</a></li><li><a href="/terms">Terms &amp; Conditions</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Get in touch</h4>
+        <ul>
+          <% if (settings.phone) { %><li><a href="tel:<%= settings.phone.replace(/[^+0-9]/g,'') %>"><%= settings.phone %></a></li><% } %>
+          <% if (settings.email) { %><li><a href="mailto:<%= settings.email %>"><%= settings.email %></a></li><% } %>
+          <% if (settings.hours) { %><li><%= settings.hours %></li><% } %>
+          <% if (settings.address) { %><li><%= settings.address %></li><% } %>
+        </ul>
+        <h4 style="margin-top:20px">Join our list</h4>
+        <form class="news" method="post" action="/newsletter"><input type="hidden" name="_csrf" value="<%= csrf %>"><label class="sr" for="nl">Email</label><input id="nl" type="email" name="email" placeholder="Your email" required><button class="btn light sm" type="submit">Join</button></form>
+      </div>
+    </div>
+    <div class="copy"><span>&copy; <%= new Date().getFullYear() %> <%= settings.store_name %>. All rights reserved.</span><span>Prices are in INR and inclusive of all taxes.</span></div>
+  </div>
+</footer>
+<% if (settings.whatsapp) { %><a class="wa no-print" href="https://wa.me/<%= settings.whatsapp %>?text=<%= encodeURIComponent('Hi ' + settings.store_name + ', I have a question.') %>" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><svg><use href="#i-wa"/></svg></a><% } %>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/js/app.js?v=1" defer></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<div class="container" style="padding-bottom:64px">
+  <div class="crumbs"><a href="/">Home</a> / Customer feedback</div>
+  <div class="page-title"><h1>Customer feedback</h1>
+    <% if (stats.n) { %><p class="muted"><%- include('partials/stars', { rating: stats.a }) %> <b><%= (stats.a || 0).toFixed(1) %></b> average from <%= stats.n %> review<%= stats.n === 1 ? '' : 's' %></p><% } %></div>
+  <div class="two" style="grid-template-columns:1.4fr 1fr;gap:32px;align-items:start">
+    <div>
+      <% if (!reviews.length) { %><div class="empty"><h3>No feedback yet</h3><p class="muted">Be the first to tell us what you think!</p></div><% } %>
+      <% reviews.forEach(r => { %><div class="rev" style="margin-bottom:14px"><%- include('partials/stars', { rating: r.rating }) %><% if (r.title) { %><h3 style="margin:6px 0 0;font-size:1rem"><%= r.title %></h3><% } %><p><%= r.body %></p>
+        <div class="who"><b><%= r.name %></b><% if (r.verified) { %> &middot; <span class="verified">Verified buyer</span><% } %><% if (r.pname) { %> &middot; on <%= r.pname %><% } %> &middot; <%= new Date(r.created_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %></div></div><% }) %>
+    </div>
+    <form method="post" action="/feedback" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <h3>Share your experience</h3>
+      <label class="f" for="fname">Your name</label><input id="fname" type="text" name="name" value="<%= user ? user.name.split(' ')[0] : '' %>" required maxlength="60">
+      <label class="f" style="margin-top:12px">Rating</label>
+      <div class="star-input"><% [5, 4, 3, 2, 1].forEach(n => { %><input type="radio" id="fs<%= n %>" name="rating" value="<%= n %>" required><label for="fs<%= n %>" title="<%= n %> stars">★</label><% }) %></div>
+      <label class="f" for="ft" style="margin-top:12px">Title (optional)</label><input id="ft" type="text" name="title" maxlength="100">
+      <label class="f" for="fb" style="margin-top:12px">Your feedback</label><textarea id="fb" name="body" required minlength="5" maxlength="1200" placeholder="Tell us about your shopping experience, the products, delivery..."></textarea>
+      <button class="btn" style="margin-top:14px" type="submit">Submit feedback</button>
+      <p class="help">Reviewing a specific product? Open it from the shop and use "Write a review".</p>
+    </form>
+  </div>
+</div>

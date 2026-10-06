@@ -1,0 +1,26 @@
+<div class="container">
+  <div class="crumbs"><a href="/">Home</a> / Contact</div>
+  <div class="page-title"><h1>Contact us</h1><p class="muted">Questions about sizing, an order or a return? We'd love to help.</p></div>
+  <div class="contact-grid">
+    <div>
+      <% if (settings.phone) { %><div class="info-i"><svg><use href="#i-phone"/></svg><div><b>Call us</b><br><a href="tel:<%= settings.phone.replace(/[^+0-9]/g, '') %>"><%= settings.phone %></a></div></div><% } %>
+      <% if (settings.whatsapp) { %><div class="info-i"><svg><use href="#i-chat"/></svg><div><b>WhatsApp</b><br><a href="https://wa.me/<%= settings.whatsapp %>" target="_blank" rel="noopener">Chat with us</a></div></div><% } %>
+      <% if (settings.email) { %><div class="info-i"><svg><use href="#i-mail"/></svg><div><b>Email</b><br><a href="mailto:<%= settings.email %>"><%= settings.email %></a></div></div><% } %>
+      <% if (settings.hours) { %><div class="info-i"><svg><use href="#i-clock"/></svg><div><b>Support hours</b><br><%= settings.hours %></div></div><% } %>
+      <% if (settings.address) { %><div class="info-i"><svg><use href="#i-pin"/></svg><div><b>Address</b><br><%= settings.address %></div></div><% } %>
+      <p class="muted small">Order enquiries? Please include your order number. You can also <a class="link" href="/track">track your order</a> online.</p>
+    </div>
+    <form method="post" action="/contact" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <h3>Send us a message</h3>
+      <div class="form-grid">
+        <div><label class="f" for="cn">Your name</label><input id="cn" type="text" name="name" value="<%= form.name || (user ? user.name : '') %>" required></div>
+        <div><label class="f" for="ce">Email</label><input id="ce" type="email" name="email" value="<%= form.email || (user ? user.email : '') %>" required></div>
+        <div><label class="f" for="cp">Phone (optional)</label><input id="cp" type="tel" name="phone" value="<%= form.phone || '' %>"></div>
+        <div><label class="f" for="cs">Subject</label><input id="cs" type="text" name="subject" value="<%= form.subject || '' %>" maxlength="120"></div>
+        <div class="full"><label class="f" for="cm">Message</label><textarea id="cm" name="body" required minlength="10" maxlength="3000"><%= form.body || '' %></textarea></div>
+        <div class="full"><button class="btn" type="submit">Send message</button></div>
+      </div>
+    </form>
+  </div>
+</div>

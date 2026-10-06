@@ -1,0 +1,10 @@
+<div class="narrow center" style="padding:64px 0">
+  <span class="status pending" style="background:#fff3d6;color:#8a6200">DEMO MODE: no real payment</span>
+  <h1 style="margin-top:14px">Demo payment</h1>
+  <p class="muted">Order <b><%= o.number %></b> &middot; <b><%= money(o.total) %></b></p>
+  <p>This page stands in for a real payment gateway so you can test the full order flow. Add your Razorpay or Stripe keys in the <code>.env</code> file to take real payments.</p>
+  <form method="post" action="/pay/demo/<%= o.number %>" class="btn-row" style="justify-content:center"><input type="hidden" name="_csrf" value="<%= csrf %>">
+    <button class="btn" name="result" value="success">Simulate successful payment</button>
+    <button class="btn ghost" name="result" value="fail">Simulate failed payment</button>
+  </form>
+</div>

@@ -1,0 +1,26 @@
+<% const wishSet = typeof wish !== 'undefined' ? wish : new Set(); %>
+<article class="card">
+  <div class="card-img">
+    <a href="/product/<%= p.slug %>" aria-label="<%= p.name %>">
+      <% if (p.images[0]) { %><img src="<%= p.images[0] %>" alt="<%= p.name %>" loading="lazy" width="600" height="800"><% } %>
+      <% if (p.images[1]) { %><img class="alt" src="<%= p.images[1] %>" alt="" loading="lazy" width="600" height="800"><% } %>
+    </a>
+    <div class="tags">
+      <% if (p.totalStock <= 0) { %><span class="tag out">Sold out</span><% } else { %>
+        <% if (p.is_new) { %><span class="tag new">New</span><% } %>
+        <% if (p.discount >= 5) { %><span class="tag sale">-<%= p.discount %>%</span><% } %>
+      <% } %>
+    </div>
+    <button class="heart <%= wishSet.has(p.id) ? 'on' : '' %>" data-wish="<%= p.id %>" aria-label="Save to wishlist" aria-pressed="<%= wishSet.has(p.id) %>"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.400-9-9.200C1.600 7.400 3.600 4 7 4c2 0 3.500 1.100 5 3 1.500-1.900 3-3 5-3 3.400 0 5.400 3.400 4 6.800C19 15.600 12 20 12 20z"/></svg></button>
+  </div>
+  <div class="card-body">
+    <div class="card-cat"><%= p.category %></div>
+    <a class="card-name" href="/product/<%= p.slug %>"><%= p.name %></a>
+    <div class="price"><%= money(p.price) %><% if (p.discount >= 5) { %><s><%= money(p.mrp) %></s><% } %></div>
+    <% if (p.reviewCount) { %><div class="small muted"><span class="stars"><%- '★'.repeat(Math.round(p.rating)) %><span class="e"><%- '★'.repeat(5 - Math.round(p.rating)) %></span></span> (<%= p.reviewCount %>)</div><% } %>
+    <div class="dots" aria-label="<%= p.colors.length %> colours">
+      <% p.colors.slice(0, 6).forEach(c => { %><span class="dot" style="background:<%= c.hex %>" title="<%= c.name %>"></span><% }) %>
+      <% if (p.colors.length > 6) { %><span class="small muted">+<%= p.colors.length - 6 %></span><% } %>
+    </div>
+  </div>
+</article>

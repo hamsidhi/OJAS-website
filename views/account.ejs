@@ -1,0 +1,43 @@
+<div class="container" style="padding-bottom:64px">
+  <div class="page-title"><h1>Hello, <%= user.name.split(' ')[0] %></h1>
+    <div class="row"><span class="muted"><%= user.email %></span>
+      <% if (user.role === 'admin') { %><a class="btn sm" href="/admin">Open admin panel</a><% } %>
+      <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn ghost sm" type="submit">Sign out</button></form></div></div>
+
+  <h2>My orders</h2>
+  <% if (!myOrders.length) { %><div class="empty"><p class="muted">You haven't placed any orders yet.</p><a class="btn" href="/shop">Start shopping</a></div>
+  <% } else { %>
+    <% myOrders.forEach(o => { %>
+      <div class="panel">
+        <div class="row" style="justify-content:space-between">
+          <div><b><a href="/order/<%= o.number %>"><%= o.number %></a></b><div class="small muted"><%= new Date(o.created_at + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %> &middot; <%= money(o.total) %></div></div>
+          <div class="row"><span class="status <%= o.status %>"><%= ORDER_STATUS[o.status] %></span><span class="status <%= o.payment_status %>"><%= PAY_STATUS[o.payment_status] %></span><a class="btn ghost sm" href="/order/<%= o.number %>">View / Track</a></div>
+        </div>
+        <div class="row" style="margin-top:12px"><% o.items.slice(0, 6).forEach(i => { %><% if (i.image) { %><img class="thumb" src="<%= i.image %>" alt="<%= i.name %>" title="<%= i.name %> (<%= i.color %>/<%= i.size %>) x<%= i.qty %>"><% } %><% }) %></div>
+      </div>
+    <% }) %>
+  <% } %>
+
+  <div class="contact-grid" style="padding-top:24px">
+    <div class="panel" id="profile"><h3>Profile</h3>
+      <form method="post" action="/account/profile"><input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label class="f" for="pn">Name</label><input id="pn" type="text" name="name" value="<%= user.name %>" required>
+        <label class="f" for="pp" style="margin-top:12px">Mobile</label><input id="pp" type="tel" name="phone" value="<%= user.phone || '' %>">
+        <h4 style="margin-top:20px">Change password</h4>
+        <label class="f" for="cp">Current password</label><input id="cp" type="password" name="current_password" autocomplete="current-password">
+        <label class="f" for="np" style="margin-top:12px">New password</label><input id="np" type="password" name="new_password" minlength="8" autocomplete="new-password">
+        <button class="btn" style="margin-top:16px" type="submit">Save profile</button>
+      </form></div>
+    <div class="panel" id="address"><h3>Saved address</h3>
+      <form method="post" action="/account/address" class="form-grid"><input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="full"><label class="f" for="an">Full name</label><input id="an" type="text" name="name" value="<%= address.name || user.name %>" required></div>
+        <div class="full"><label class="f" for="ap">Phone</label><input id="ap" type="tel" name="phone" value="<%= address.phone || user.phone || '' %>" required></div>
+        <div class="full"><label class="f" for="a1">Address</label><input id="a1" type="text" name="line1" value="<%= address.line1 || '' %>" required></div>
+        <div class="full"><label class="f" for="a2">Landmark (optional)</label><input id="a2" type="text" name="line2" value="<%= address.line2 || '' %>"></div>
+        <div><label class="f" for="ac">City</label><input id="ac" type="text" name="city" value="<%= address.city || '' %>" required></div>
+        <div><label class="f" for="az">PIN code</label><input id="az" type="text" name="pincode" value="<%= address.pincode || '' %>" maxlength="6" required></div>
+        <div class="full"><label class="f" for="as">State</label><select id="as" name="state" required><option value="">Select state</option><% STATES.forEach(s => { %><option <%= address.state === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+        <div class="full"><button class="btn" type="submit">Save address</button></div>
+      </form></div>
+  </div>
+</div>

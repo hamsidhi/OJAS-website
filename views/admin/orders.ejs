@@ -1,0 +1,14 @@
+<div class="admin-top"><h1>Orders <span class="muted" style="font-size:1rem">(<%= total %>)</span></h1><a class="btn ghost sm" href="/admin/orders/export.csv?status=<%= st %>&pay=<%= pay %>&q=<%= encodeURIComponent(q) %>">Export CSV</a></div>
+<div class="tabs"><a href="/admin/orders" class="<%= !st ? 'on' : '' %>">All</a><% Object.keys(ORDER_STATUS).forEach(k => { %><a href="/admin/orders?status=<%= k %>" class="<%= st === k ? 'on' : '' %>"><%= ORDER_STATUS[k] %><% if (counts[k]) { %> (<%= counts[k] %>)<% } %></a><% }) %></div>
+<form class="filter-row" method="get"><input type="hidden" name="status" value="<%= st %>"><input type="search" name="q" value="<%= q %>" placeholder="Order no, name, email or phone" aria-label="Search">
+  <select name="pay" data-autosubmit aria-label="Payment status"><option value="">Any payment</option><% Object.keys(PAY_STATUS).forEach(k => { %><option value="<%= k %>" <%= pay === k ? 'selected' : '' %>><%= PAY_STATUS[k] %></option><% }) %></select><button class="btn ghost sm">Search</button></form>
+<div class="tbl-wrap"><table class="t"><tr><th>Order</th><th>Date</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th></tr>
+  <% if (!rows.length) { %><tr><td colspan="6" class="muted">No orders found.</td></tr><% } %>
+  <% rows.forEach(o => { %><tr>
+    <td><a class="link" href="/admin/orders/<%= o.number %>"><%= o.number %></a></td>
+    <td class="small"><%= new Date(o.created_at + 'Z').toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %></td>
+    <td><%= o.name %><div class="muted small"><%= o.email %></div></td><td><b><%= money(o.total) %></b></td>
+    <td><span class="status <%= o.payment_status %>"><%= PAY_STATUS[o.payment_status] %></span><div class="muted small"><%= o.payment_method %></div></td>
+    <td><span class="status <%= o.status %>"><%= ORDER_STATUS[o.status] %></span></td></tr><% }) %>
+</table></div>
+<% if (pages > 1) { %><nav class="pager"><% for (let i = 1; i <= pages; i++) { %><% if (i === page) { %><span class="cur"><%= i %></span><% } else { %><a href="/admin/orders?status=<%= st %>&pay=<%= pay %>&q=<%= encodeURIComponent(q) %>&page=<%= i %>"><%= i %></a><% } %><% } %></nav><% } %>

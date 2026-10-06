@@ -1,0 +1,5 @@
+<div class="admin-top"><h1>Customers <span class="muted" style="font-size:1rem">(<%= rows.length %>)</span></h1><a class="btn ghost sm" href="/admin/subscribers.csv">Download newsletter list (<%= subs %>)</a></div>
+<div class="tbl-wrap"><table class="t"><tr><th>Name</th><th>Email</th><th>Phone</th><th>Orders</th><th>Spent</th><th>Joined</th></tr>
+  <% if (!rows.length) { %><tr><td colspan="6" class="muted">No customers yet.</td></tr><% } %>
+  <% rows.forEach(u => { %><tr><td><%= u.name %></td><td><%= u.email %></td><td><%= u.phone || '-' %></td><td><%= u.orders %></td><td><%= money(u.spent) %></td><td class="small"><%= new Date(u.created_at + 'Z').toLocaleDateString('en-IN') %></td></tr><% }) %>
+</table></div>

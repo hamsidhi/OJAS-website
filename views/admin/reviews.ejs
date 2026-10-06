@@ -1,0 +1,11 @@
+<div class="admin-top"><h1>Reviews &amp; feedback</h1></div>
+<div class="tabs"><% ['pending', 'approved', 'rejected'].forEach(k => { %><a href="/admin/reviews?status=<%= k %>" class="<%= st === k ? 'on' : '' %>"><%= k[0].toUpperCase() + k.slice(1) %><% if (counts[k]) { %> (<%= counts[k] %>)<% } %></a><% }) %></div>
+<% if (!rows.length) { %><div class="empty"><p class="muted" style="margin:0">Nothing here.</p></div><% } %>
+<% rows.forEach(r => { %><div class="panel">
+  <div class="row" style="justify-content:space-between"><div><%- include('../partials/stars', { rating: r.rating }) %> <b><%= r.name %></b><% if (r.verified) { %> <span class="verified small">Verified buyer</span><% } %>
+    <div class="small muted"><%= r.pname ? 'On: ' + r.pname : 'General store feedback' %> &middot; <%= new Date(r.created_at + 'Z').toLocaleDateString('en-IN') %></div></div>
+    <form method="post" action="/admin/reviews/<%= r.id %>" class="row"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <% if (r.status !== 'approved') { %><button class="btn sm" name="action" value="approved">Approve</button><% } %>
+      <% if (r.status !== 'rejected') { %><button class="btn ghost sm" name="action" value="rejected">Reject</button><% } %>
+      <button class="btn danger sm" name="action" value="delete" data-confirm="Delete this review?">Delete</button></form></div>
+  <% if (r.title) { %><h4 style="margin:10px 0 0"><%= r.title %></h4><% } %><p style="margin:6px 0 0"><%= r.body %></p></div><% }) %>

@@ -1,0 +1,58 @@
+<div class="container">
+  <div class="crumbs"><a href="/cart">Bag</a> / Checkout</div>
+  <div class="page-title"><h1>Checkout</h1></div>
+  <% if (!user) { %><p class="muted" style="margin-top:-8px">Have an account? <a class="link" href="/login?next=/checkout">Sign in</a> for faster checkout, or continue as a guest.</p><% } %>
+  <form method="post" action="/checkout" class="cart-grid" id="checkoutForm" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div>
+      <div class="panel">
+        <h3>1. Contact</h3>
+        <div class="form-grid">
+          <div><label class="f" for="email">Email</label><input id="email" type="email" name="email" value="<%= form.email || '' %>" required autocomplete="email"></div>
+          <div><label class="f" for="phone">Mobile number</label><input id="phone" type="tel" name="phone" value="<%= form.phone || '' %>" required autocomplete="tel" inputmode="tel"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>2. Delivery address</h3>
+        <div class="form-grid">
+          <div class="full"><label class="f" for="name">Full name</label><input id="name" type="text" name="name" value="<%= form.name || '' %>" required autocomplete="name"></div>
+          <div class="full"><label class="f" for="line1">Address (house no., street, area)</label><input id="line1" type="text" name="line1" value="<%= form.line1 || '' %>" required autocomplete="address-line1"></div>
+          <div class="full"><label class="f" for="line2">Landmark / apartment (optional)</label><input id="line2" type="text" name="line2" value="<%= form.line2 || '' %>" autocomplete="address-line2"></div>
+          <div><label class="f" for="city">City</label><input id="city" type="text" name="city" value="<%= form.city || '' %>" required autocomplete="address-level2"></div>
+          <div><label class="f" for="pincode">PIN code</label><input id="pincode" type="text" name="pincode" value="<%= form.pincode || '' %>" required maxlength="6" inputmode="numeric" pattern="[1-9][0-9]{5}" autocomplete="postal-code"></div>
+          <div class="full"><label class="f" for="state">State</label>
+            <select id="state" name="state" required autocomplete="address-level1"><option value="">Select state</option><% STATES.forEach(s => { %><option <%= form.state === s ? 'selected' : '' %>><%= s %></option><% }) %></select></div>
+          <div class="full"><label class="f" for="note">Order note (optional)</label><input id="note" type="text" name="note" maxlength="300" value="<%= form.note || '' %>" placeholder="Delivery instructions"></div>
+        </div>
+        <% if (user) { %><label class="check" style="margin-top:14px"><input type="checkbox" name="save_address" value="1" checked> Save this address for next time</label><% } %>
+      </div>
+      <div class="panel">
+        <h3>3. Payment</h3>
+        <% if (!methods.length) { %><p class="muted">No payment method is available right now. Please contact us.</p><% } %>
+        <% methods.forEach(m => { %>
+          <label class="pay-opt"><input type="radio" name="method" value="<%= m.id %>" <%= selected === m.id ? 'checked' : '' %> data-method><span><b><%= m.label %></b><span class="small muted"><%= m.sub %></span></span></label>
+        <% }) %>
+      </div>
+    </div>
+
+    <aside class="summary">
+      <h3>Order summary</h3>
+      <% t.items.forEach(i => { %><div class="mini"><img src="<%= i.image %>" alt="" width="52" height="69"><div class="n"><%= i.name %><div class="muted small"><%= i.color %> / <%= i.size %> &times; <%= i.qty %></div></div><b><%= money(i.line) %></b></div><% }) %>
+      <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+      <% if (t.coupon) { %>
+        <div class="sum-row"><span><b><%= t.coupon.code %></b> applied</span><button class="link small" type="submit" form="rmCoupon">Remove</button></div>
+      <% } else { %>
+        <div class="coupon"><label class="sr" for="cc">Coupon code</label><input id="cc" name="code" form="applyCoupon" placeholder="Coupon code" maxlength="30"><button class="btn ghost sm" type="submit" form="applyCoupon">Apply</button></div>
+      <% } %>
+      <div class="sum-row"><span>Subtotal</span><span><%= money(t.subtotal) %></span></div>
+      <% if (t.discount) { %><div class="sum-row"><span>Discount</span><span style="color:var(--ok)">-<%= money(t.discount) %></span></div><% } %>
+      <div class="sum-row"><span>Shipping</span><span><% if (t.shipping) { %><%= money(t.shipping) %><% } else { %><span class="free">FREE</span><% } %></span></div>
+      <div class="sum-row" id="codRow" hidden><span>COD fee</span><span><%= money(settings.cod_fee) %></span></div>
+      <div class="sum-row total"><span>Total</span><span id="grand" data-base="<%= t.total %>" data-cod="<%= Number(settings.cod_fee) %>"><%= money(t.total) %></span></div>
+      <button class="btn block" type="submit" id="placeBtn" <%= methods.length ? '' : 'disabled' %>>Place order</button>
+      <p class="small muted center" style="margin:12px 0 0">By placing your order you agree to our <a class="link" href="/terms">Terms</a> and <a class="link" href="/privacy">Privacy Policy</a>.</p>
+    </aside>
+  </form>
+  <form id="applyCoupon" method="post" action="/cart/coupon"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="from" value="checkout"></form>
+  <form id="rmCoupon" method="post" action="/cart/coupon/remove"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="from" value="checkout"></form>
+</div>

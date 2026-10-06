@@ -1,0 +1,7 @@
+<div class="container"><div class="auth">
+  <h1>Choose a new password</h1>
+  <form method="post" action="/reset/<%= tokenValue %>" class="panel"><input type="hidden" name="_csrf" value="<%= csrf %>">
+    <label class="f" for="p">New password</label><input id="p" type="password" name="password" required minlength="8" autocomplete="new-password" autofocus><div class="help">At least 8 characters.</div>
+    <button class="btn block" style="margin-top:18px" type="submit">Update password</button>
+  </form>
+</div></div>

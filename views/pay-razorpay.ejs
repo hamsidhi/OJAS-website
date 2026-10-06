@@ -1,0 +1,12 @@
+<div class="narrow center" style="padding:64px 0">
+  <h1>Complete your payment</h1>
+  <p class="muted">Order <b><%= o.number %></b> &middot; <b><%= money(o.total) %></b></p>
+  <p>A secure Razorpay window will open. If it doesn't, press the button below.</p>
+  <div id="rzp" data-key="<%= key %>" data-order="<%= o.gateway_order_id %>" data-amount="<%= o.total * 100 %>" data-number="<%= o.number %>"
+       data-name="<%= settings.store_name %>" data-cname="<%= o.name %>" data-email="<%= o.email %>" data-phone="<%= o.phone || '' %>"></div>
+  <button class="btn" id="rzpPay" type="button">Pay <%= money(o.total) %></button>
+  <p id="rzpMsg" class="small muted" style="margin-top:16px" role="status"></p>
+  <form method="post" action="/order/<%= o.number %>/cancel" style="margin-top:24px"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="link small muted" type="submit" style="font-weight:500">Cancel this order</button></form>
+</div>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/js/pay.js" defer></script>

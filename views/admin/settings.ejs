@@ -1,0 +1,49 @@
+<div class="admin-top"><h1>Settings</h1></div>
+<form method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="two" style="grid-template-columns:1fr 1fr;align-items:start">
+    <div>
+      <div class="panel"><h3>Store &amp; contact details</h3>
+        <p class="help" style="margin-top:-8px">These appear in the website header, footer, contact page and emails.</p>
+        <div class="form-grid">
+          <div><label class="f" for="store_name">Store name</label><input id="store_name" name="store_name" value="<%= settings.store_name %>"></div>
+          <div><label class="f" for="tagline">Tagline</label><input id="tagline" name="tagline" value="<%= settings.tagline %>"></div>
+          <div><label class="f" for="email">Support email</label><input id="email" name="email" type="email" value="<%= settings.email %>"></div>
+          <div><label class="f" for="phone">Phone</label><input id="phone" name="phone" value="<%= settings.phone %>"></div>
+          <div><label class="f" for="whatsapp">WhatsApp number</label><input id="whatsapp" name="whatsapp" value="<%= settings.whatsapp %>" placeholder="919876543210"><div class="help">Country code + number, no + or spaces. Leave empty to hide the chat button.</div></div>
+          <div><label class="f" for="hours">Support hours</label><input id="hours" name="hours" value="<%= settings.hours %>"></div>
+          <div class="full"><label class="f" for="address">Address</label><input id="address" name="address" value="<%= settings.address %>"></div>
+          <div><label class="f" for="instagram">Instagram URL</label><input id="instagram" name="instagram" type="url" value="<%= settings.instagram %>"></div>
+          <div><label class="f" for="facebook">Facebook URL</label><input id="facebook" name="facebook" type="url" value="<%= settings.facebook %>"></div>
+          <div class="full"><label class="f" for="announcement">Top banner text</label><input id="announcement" name="announcement" value="<%= settings.announcement %>"><div class="help">Use {free_shipping_over} to insert the free-shipping amount. Leave empty to hide.</div></div>
+        </div></div>
+      <div class="panel"><h3>Size chart</h3>
+        <label class="f" for="size_chart">One row per line: Size, Bust, Waist, Hips (inches)</label>
+        <textarea id="size_chart" name="size_chart" style="min-height:170px;font-family:monospace"><%= JSON.parse(settings.size_chart).map(r => r.join(', ')).join('\n') %></textarea>
+        <div class="help">Default values are a generic guide. Replace them with your own measurements.</div></div>
+    </div>
+    <div>
+      <div class="panel"><h3>Shipping &amp; COD</h3>
+        <div class="form-grid">
+          <div><label class="f" for="shipping_fee">Shipping fee (₹)</label><input id="shipping_fee" name="shipping_fee" type="number" min="0" value="<%= settings.shipping_fee %>"></div>
+          <div><label class="f" for="free_shipping_over">Free shipping over (₹)</label><input id="free_shipping_over" name="free_shipping_over" type="number" min="0" value="<%= settings.free_shipping_over %>"><div class="help">0 = never free</div></div>
+          <div class="full"><label class="check"><input type="checkbox" name="cod_enabled" value="1" <%= settings.cod_enabled === '1' ? 'checked' : '' %>> Offer Cash on Delivery</label></div>
+          <div><label class="f" for="cod_fee">COD fee (₹)</label><input id="cod_fee" name="cod_fee" type="number" min="0" value="<%= settings.cod_fee %>"></div>
+          <div><label class="f" for="cod_max">Max COD order (₹)</label><input id="cod_max" name="cod_max" type="number" min="0" value="<%= settings.cod_max %>"><div class="help">0 = no limit</div></div>
+          <div><label class="f" for="return_days">Return window (days)</label><input id="return_days" name="return_days" type="number" min="0" value="<%= settings.return_days %>"></div>
+          <div><label class="f" for="low_stock">Low-stock alert at</label><input id="low_stock" name="low_stock" type="number" min="0" value="<%= settings.low_stock %>"></div>
+        </div></div>
+      <div class="panel"><h3>Reviews</h3>
+        <label class="check"><input type="checkbox" name="reviews_auto_approve" value="1" <%= settings.reviews_auto_approve === '1' ? 'checked' : '' %>> Publish reviews immediately (otherwise you approve each one)</label></div>
+      <div class="panel" id="payments"><h3>Payments &amp; email status</h3>
+        <p class="small muted">Keys are kept in the <code>.env</code> file on your server (never in the website), then restart the server.</p>
+        <div class="sum-row"><span>Razorpay (UPI, cards, netbanking)</span><span class="status <%= pay.razorpay ? 'delivered' : 'pending' %>"><%= pay.razorpay ? 'Connected' : 'Not set' %></span></div>
+        <div class="sum-row"><span>Stripe (international cards)</span><span class="status <%= pay.stripe ? 'delivered' : 'pending' %>"><%= pay.stripe ? 'Connected' : 'Not set' %></span></div>
+        <div class="sum-row"><span>Demo payments (testing only)</span><span class="status <%= pay.demo ? 'processing' : 'pending' %>"><%= pay.demo ? 'ON' : 'Off' %></span></div>
+        <div class="sum-row"><span>Order emails (SMTP)</span><span class="status <%= pay.email ? 'delivered' : 'pending' %>"><%= pay.email ? 'Connected' : 'Not set' %></span></div>
+        <p class="small muted" style="margin-top:12px">Webhook URLs to register in your gateway dashboards:<br><code><%= baseUrl %>/webhooks/razorpay</code><br><code><%= baseUrl %>/webhooks/stripe</code></p>
+      </div>
+    </div>
+  </div>
+  <button class="btn" type="submit">Save settings</button>
+</form>

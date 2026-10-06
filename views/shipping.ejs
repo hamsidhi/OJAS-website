@@ -1,0 +1,21 @@
+<div class="container" style="padding-bottom:64px"><div class="prose">
+  <div class="page-title"><h1>Shipping &amp; returns</h1></div>
+  <h2>Shipping</h2>
+  <ul>
+    <li>Orders are processed within 1-3 working days.</li>
+    <li>Delivery typically takes 3-7 working days across India.</li>
+    <li>Shipping costs <%= money(settings.shipping_fee) %><% if (Number(settings.free_shipping_over) > 0) { %>, and is <b>free on orders above <%= money(settings.free_shipping_over) %></b><% } %>.</li>
+    <% if (settings.cod_enabled === '1') { %><li>Cash on Delivery is available<%= Number(settings.cod_fee) ? ' for an extra ' + money(settings.cod_fee) : '' %><%= Number(settings.cod_max) ? ' on orders up to ' + money(settings.cod_max) : '' %>.</li><% } %>
+    <li>You will receive an email when your order ships, and you can always use <a class="link" href="/track">Track order</a>.</li>
+  </ul>
+  <h2>Returns &amp; exchanges</h2>
+  <ul>
+    <li>You can return or exchange items within <b><%= settings.return_days %> days</b> of delivery.</li>
+    <li>Items must be unworn, unwashed and have original tags attached.</li>
+    <li>For hygiene reasons, sports bras and shorts/skorts with inner lining can only be returned if unopened or defective.</li>
+    <li>To start a return, <a class="link" href="/contact">contact us</a> with your order number.</li>
+    <li>Refunds are issued to your original payment method (or by bank transfer for COD orders) within 5-7 working days after we receive the item.</li>
+  </ul>
+  <h2>Damaged or wrong item?</h2>
+  <p>Please contact us within 48 hours of delivery with photos and we'll make it right.</p>
+</div></div>
