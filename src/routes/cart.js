@@ -15,23 +15,23 @@ function canView(req, o) {
 function remember(req, number) { (req.session.myOrders ||= []).push(number); req.session.myOrders = req.session.myOrders.slice(-20); }
 
 /* ---------- Cart ---------- */
-router.get('/cart', (req, res) => {
-  const t = cart.totals(req);
+router.get('/cart', async (req, res) => {
+  const t = await cart.totals(req);
   res.page('cart', { title: 'Your Bag', t });
 });
 
-router.post('/cart/add', (req, res) => {
-  const r = cart.add(req, U.int(req.body.pid), U.str(req.body.color, 60), U.str(req.body.size, 10), Math.min(10, U.int(req.body.qty, 1)));
+router.post('/cart/add', async (req, res) => {
+  const r = await cart.add(req, U.int(req.body.pid), U.str(req.body.color, 60), U.str(req.body.size, 10), Math.min(10, U.int(req.body.qty, 1)));
   const count = (req.session.cart || []).reduce((a, l) => a + l.qty, 0);
   if (wantsJson(req)) return res.status(r.ok ? 200 : 400).json({ ...r, count });
   if (!r.ok) { res.flash('error', r.error); return res.redirect(req.get('referer') || '/shop'); }
   res.redirect(req.body.buy === '1' ? '/checkout' : '/cart');
 });
-router.post('/cart/update', (req, res) => { cart.setQty(req, String(req.body.key), U.int(req.body.qty)); res.redirect('/cart'); });
+router.post('/cart/update', async (req, res) => { await cart.setQty(req, String(req.body.key), U.int(req.body.qty)); res.redirect('/cart'); });
 router.post('/cart/remove', (req, res) => { cart.remove(req, String(req.body.key)); res.redirect('/cart'); });
-router.post('/cart/coupon', (req, res) => {
-  const t = cart.totals(req);
-  const v = cart.validateCoupon(req.body.code, t.subtotal);
+router.post('/cart/coupon', async (req, res) => {
+  const t = await cart.totals(req);
+  const v = await cart.validateCoupon(req.body.code, t.subtotal);
   if (v.ok) { req.session.coupon = v.code; res.flash('success', `Coupon ${v.code} applied (${v.label}).`); }
   else res.flash('error', v.error || 'Enter a coupon code.');
   res.redirect(req.body.from === 'checkout' ? '/checkout' : '/cart');
@@ -39,13 +39,13 @@ router.post('/cart/coupon', (req, res) => {
 router.post('/cart/coupon/remove', (req, res) => { delete req.session.coupon; res.redirect(req.body.from === 'checkout' ? '/checkout' : '/cart'); });
 
 /* ---------- Checkout ---------- */
-router.get('/checkout', (req, res) => {
-  const t = cart.totals(req);
+router.get('/checkout', async (req, res) => {
+  const t = await cart.totals(req);
   if (!t.items.length) { res.flash('error', 'Your bag is empty.'); return res.redirect('/cart'); }
-  const method = P.available(getSettings(), t.total)[0];
-  const saved = req.user ? db.prepare('SELECT * FROM addresses WHERE user_id = ? ORDER BY id DESC').get(req.user.id) : null;
+  const methods = P.available(getSettings(), t.total);
+  const saved = req.user ? await db.get('SELECT * FROM addresses WHERE user_id = ? ORDER BY id DESC', req.user.id) : null;
   const form = req.session.checkoutForm || {};
-  res.page('checkout', { title: 'Checkout', t, methods: P.available(getSettings(), t.total), selected: form.method || (method && method.id),
+  res.page('checkout', { title: 'Checkout', t, methods, selected: form.method || (methods[0] && methods[0].id),
     form: { name: req.user ? req.user.name : '', email: req.user ? req.user.email : '', phone: req.user ? req.user.phone : '', ...(saved || {}), ...form } });
 });
 
@@ -58,7 +58,7 @@ router.post('/checkout', checkoutLimiter, async (req, res) => {
   req.session.checkoutForm = form;
   const fail = (msg) => { res.flash('error', msg); return res.redirect('/checkout'); };
 
-  const t = cart.totals(req, form.method);
+  const t = await cart.totals(req, form.method);
   if (!t.items.length) return res.redirect('/cart');
   if (t.hasProblem) return fail('Some items in your bag are sold out. Please remove them to continue.');
   if (form.name.length < 2) return fail('Please enter your full name.');
@@ -71,28 +71,29 @@ router.post('/checkout', checkoutLimiter, async (req, res) => {
 
   let order;
   try {
-    order = orders.create({ user: req.user, email: form.email, phone: form.phone, method: method.id, t, note: form.note,
+    order = await orders.create({ user: req.user, email: form.email, phone: form.phone, method: method.id, t, note: form.note,
       ship: { name: form.name, phone: form.phone, line1: form.line1, line2: form.line2, city: form.city, state: form.state, pincode: form.pincode } });
   } catch (e) {
     if (e.user) return fail(e.message);
     throw e;
   }
   if (req.user && b.save_address) {
-    db.prepare('DELETE FROM addresses WHERE user_id = ?').run(req.user.id);
-    db.prepare('INSERT INTO addresses(user_id,name,phone,line1,line2,city,state,pincode) VALUES(?,?,?,?,?,?,?,?)')
-      .run(req.user.id, form.name, form.phone, form.line1, form.line2, form.city, form.state, form.pincode);
-    if (!req.user.phone) db.prepare('UPDATE users SET phone = ? WHERE id = ?').run(form.phone, req.user.id);
+    await db.run('DELETE FROM addresses WHERE user_id = ?', req.user.id);
+    await db.run('INSERT INTO addresses(user_id,name,phone,line1,line2,city,state,pincode) VALUES(?,?,?,?,?,?,?,?)',
+      req.user.id, form.name, form.phone, form.line1, form.line2, form.city, form.state, form.pincode);
+    if (!req.user.phone) await db.run('UPDATE users SET phone = ? WHERE id = ?', form.phone, req.user.id);
   }
   remember(req, order.number);
   cart.clear(req);
   delete req.session.checkoutForm;
-  if (method.id === 'cod') { orders.finalize(order, base(req)); return res.redirect(`/order/${order.number}?placed=1`); }
+  orders.expireStale().catch(() => {});
+  if (method.id === 'cod') { await orders.finalize(order, base(req)); return res.redirect(`/order/${order.number}?placed=1`); }
   res.redirect(`/pay/${order.number}`);
 });
 
 /* ---------- Pay ---------- */
 router.get('/pay/:number', async (req, res) => {
-  const o = orders.get(req.params.number);
+  const o = await orders.get(req.params.number);
   if (!canView(req, o)) return res.status(404).page('error', { title: 'Not found', code: 404, message: 'Order not found.' });
   if (o.payment_status === 'paid' || o.payment_method === 'cod') return res.redirect(`/order/${o.number}`);
   if (o.status === 'cancelled') return res.page('error', { title: 'Order cancelled', code: '', message: 'This order was cancelled because payment was not completed. Your items were released, so please place the order again.' });
@@ -101,7 +102,7 @@ router.get('/pay/:number', async (req, res) => {
     try {
       if (!o.gateway_order_id) {
         const g = await P.razorpay.createOrder(o);
-        db.prepare('UPDATE orders SET gateway_order_id = ? WHERE id = ?').run(g.id, o.id);
+        await db.run('UPDATE orders SET gateway_order_id = ? WHERE id = ?', g.id, o.id);
         o.gateway_order_id = g.id;
       }
     } catch (e) { console.error('[razorpay]', e.message); return res.page('error', { title: 'Payment unavailable', code: '', message: 'We could not start the payment. Please try again in a moment or choose Cash on Delivery.' }); }
@@ -110,7 +111,7 @@ router.get('/pay/:number', async (req, res) => {
   if (o.payment_method === 'stripe' && P.stripe.enabled()) {
     try {
       const s = await P.stripe.createSession(o, { successUrl: `${base(req)}/pay/stripe/return?order=${o.number}&session_id={CHECKOUT_SESSION_ID}`, cancelUrl: `${base(req)}/pay/stripe/cancel?order=${o.number}` });
-      db.prepare('UPDATE orders SET gateway_order_id = ? WHERE id = ?').run(s.id, o.id);
+      await db.run('UPDATE orders SET gateway_order_id = ? WHERE id = ?', s.id, o.id);
       return res.redirect(303, s.url);
     } catch (e) { console.error('[stripe]', e.message); return res.page('error', { title: 'Payment unavailable', code: '', message: 'We could not start the card payment. Please try again in a moment.' }); }
   }
@@ -119,7 +120,7 @@ router.get('/pay/:number', async (req, res) => {
 });
 
 router.post('/pay/razorpay/verify', async (req, res) => {
-  const o = orders.get(U.str(req.body.number, 30));
+  const o = await orders.get(U.str(req.body.number, 30));
   if (!canView(req, o) || !o.gateway_order_id || o.gateway_order_id !== req.body.razorpay_order_id) return res.status(400).json({ ok: false, error: 'Invalid order.' });
   if (!P.razorpay.verify(req.body.razorpay_order_id, req.body.razorpay_payment_id, req.body.razorpay_signature)) return res.status(400).json({ ok: false, error: 'Payment verification failed.' });
   await orders.markPaid(o.number, { paymentId: req.body.razorpay_payment_id, baseUrl: base(req) });
@@ -127,7 +128,7 @@ router.post('/pay/razorpay/verify', async (req, res) => {
 });
 
 router.get('/pay/stripe/return', async (req, res) => {
-  const o = orders.get(U.str(req.query.order, 30));
+  const o = await orders.get(U.str(req.query.order, 30));
   if (!canView(req, o)) return res.redirect('/');
   try {
     const s = await P.stripe.retrieveSession(String(req.query.session_id));
@@ -138,37 +139,37 @@ router.get('/pay/stripe/return', async (req, res) => {
   } catch (e) { console.error('[stripe return]', e.message); }
   res.redirect(`/order/${o.number}`);
 });
-router.get('/pay/stripe/cancel', (req, res) => {
-  const o = orders.get(U.str(req.query.order, 30));
+router.get('/pay/stripe/cancel', async (req, res) => {
+  const o = await orders.get(U.str(req.query.order, 30));
   res.redirect(o && canView(req, o) ? `/order/${o.number}` : '/');
 });
 
 router.post('/pay/demo/:number', async (req, res) => {
   if (!P.demo.enabled()) return res.status(404).end();
-  const o = orders.get(req.params.number);
+  const o = await orders.get(req.params.number);
   if (!canView(req, o) || o.payment_method !== 'demo') return res.status(404).end();
   if (req.body.result === 'success') { await orders.markPaid(o.number, { paymentId: 'demo_' + Date.now(), baseUrl: base(req) }); return res.redirect(`/order/${o.number}?placed=1`); }
   res.redirect(`/order/${o.number}`);
 });
 
 /* ---------- Order view / tracking ---------- */
-router.get('/order/:number', (req, res) => {
-  const o = orders.get(req.params.number);
+router.get('/order/:number', async (req, res) => {
+  const o = await orders.get(req.params.number);
   if (!canView(req, o)) { res.flash('error', 'Please sign in or use "Track order" with your email to view that order.'); return res.redirect('/track?order=' + encodeURIComponent(req.params.number)); }
-  res.page('order', { title: `Order ${o.number}`, o, items: orders.items(o.id), ship: U.jparse(o.ship, {}), placed: req.query.placed === '1', print: req.query.print === '1' });
+  res.page('order', { title: `Order ${o.number}`, o, items: await orders.items(o.id), ship: U.jparse(o.ship, {}), placed: req.query.placed === '1', print: req.query.print === '1' });
 });
 
-router.post('/order/:number/cancel', (req, res) => {
-  const o = orders.get(req.params.number);
+router.post('/order/:number/cancel', async (req, res) => {
+  const o = await orders.get(req.params.number);
   if (!canView(req, o)) return res.status(404).end();
-  if (o.payment_status === 'pending' && o.status === 'pending') { orders.markFailed(o.number); res.flash('success', 'Order cancelled.'); }
+  if (o.payment_status === 'pending' && o.status === 'pending') { await orders.markFailed(o.number); res.flash('success', 'Order cancelled.'); }
   res.redirect(`/order/${o.number}`);
 });
 
 const trackLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false });
 router.get('/track', (req, res) => res.page('track', { title: 'Track your order', number: U.str(req.query.order, 30) }));
-router.post('/track', trackLimiter, (req, res) => {
-  const o = orders.get(U.str(req.body.number, 30).toUpperCase());
+router.post('/track', trackLimiter, async (req, res) => {
+  const o = await orders.get(U.str(req.body.number, 30).toUpperCase());
   if (!o || o.email.toLowerCase() !== U.str(req.body.email, 120).toLowerCase()) {
     res.flash('error', 'We could not find an order with those details.');
     return res.redirect('/track');

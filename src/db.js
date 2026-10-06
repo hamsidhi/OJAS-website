@@ -1,13 +1,43 @@
-const { DatabaseSync } = require('node:sqlite');
+// Database layer (libSQL = SQLite-compatible). Works with a local file in development and with a hosted
+// Turso database on Vercel (set TURSO_DATABASE_URL + TURSO_AUTH_TOKEN).
+const { createClient } = require('@libsql/client');
 const path = require('path');
 const fs = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'store.db');
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-const db = new DatabaseSync(DB_PATH);
-db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+const remote = !!process.env.TURSO_DATABASE_URL;
+let url = process.env.TURSO_DATABASE_URL;
+if (!url) {
+  const file = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'store.db');
+  fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
+  url = 'file:' + file;
+}
+const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
 
-db.exec(`
+const clean = (a) => a.map((v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v));
+const toObj = (rs, r) => Object.fromEntries(rs.columns.map((c, i) => [c, r[i]]));
+
+function api(ex) {
+  return {
+    async all(sql, ...args) { const rs = await ex.execute({ sql, args: clean(args) }); return rs.rows.map((r) => toObj(rs, r)); },
+    async get(sql, ...args) { const rs = await ex.execute({ sql, args: clean(args) }); return rs.rows[0] ? toObj(rs, rs.rows[0]) : undefined; },
+    async run(sql, ...args) {
+      const rs = await ex.execute({ sql, args: clean(args) });
+      return { changes: rs.rowsAffected, lastInsertRowid: Number(rs.lastInsertRowid || 0) };
+    },
+  };
+}
+const db = api(client);
+db.batch = (stmts) => client.batch(stmts.map(([sql, ...args]) => ({ sql, args: clean(args) })), 'write');
+
+// Runs fn(t) in a write transaction; t has the same get/all/run methods as db.
+async function tx(fn) {
+  const t = await client.transaction('write');
+  try { const r = await fn(api(t)); await t.commit(); return r; }
+  catch (e) { try { await t.rollback(); } catch {} throw e; }
+  finally { t.close(); }
+}
+
+const SCHEMA = `
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE, phone TEXT,
@@ -71,7 +101,20 @@ CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, data TEXT NOT NULL, e
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id, status);
-`);
+`;
+
+let ready = null;
+// Creates tables when the database is empty. Runs once per server instance.
+function init() {
+  if (!ready) {
+    ready = (async () => {
+      const has = await db.get("SELECT 1 x FROM sqlite_master WHERE type='table' AND name='sessions'");
+      if (!has) { await client.executeMultiple('PRAGMA foreign_keys = ON;' + SCHEMA); }
+      await loadSettings();
+    })().catch((e) => { ready = null; throw e; });
+  }
+  return ready;
+}
 
 const DEFAULT_SETTINGS = {
   store_name: 'OJAS',
@@ -99,25 +142,23 @@ const DEFAULT_SETTINGS = {
   ]),
 };
 
-const settingsCache = { v: null };
-function getSettings() {
-  if (settingsCache.v) return settingsCache.v;
-  const rows = db.prepare('SELECT key, value FROM settings').all();
+// Settings are cached in memory for a few seconds (several server instances may run at once on Vercel).
+const cache = { v: { ...DEFAULT_SETTINGS }, at: 0 };
+const TTL = 10000;
+async function loadSettings(force = false) {
+  if (!force && Date.now() - cache.at < TTL) return cache.v;
+  const rows = await db.all('SELECT key, value FROM settings');
   const s = { ...DEFAULT_SETTINGS };
   for (const r of rows) s[r.key] = r.value;
-  settingsCache.v = s;
+  cache.v = s; cache.at = Date.now();
   return s;
 }
-function setSettings(obj) {
-  const up = db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value');
-  for (const [k, v] of Object.entries(obj)) if (k in DEFAULT_SETTINGS) up.run(k, String(v ?? ''));
-  settingsCache.v = null;
+const getSettings = () => cache.v; // synchronous read of the latest loaded settings
+async function setSettings(obj) {
+  const stmts = Object.entries(obj).filter(([k]) => k in DEFAULT_SETTINGS)
+    .map(([k, v]) => ['INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', k, String(v ?? '')]);
+  if (stmts.length) await db.batch(stmts);
+  await loadSettings(true);
 }
 
-function tx(fn) {
-  db.exec('BEGIN IMMEDIATE');
-  try { const r = fn(); db.exec('COMMIT'); return r; }
-  catch (e) { try { db.exec('ROLLBACK'); } catch {} throw e; }
-}
-
-module.exports = { db, tx, getSettings, setSettings, DEFAULT_SETTINGS };
+module.exports = { db, tx, init, getSettings, loadSettings, setSettings, DEFAULT_SETTINGS, remote };

@@ -26,9 +26,11 @@ async function send({ to, subject, html, replyTo }) {
   const t = getTransport();
   if (!t) {
     const line = `\n---- ${new Date().toISOString()} ----\nTo: ${to}\nSubject: ${subject}\n${html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')}\n`;
-    fs.mkdirSync(path.join(__dirname, '..', '..', 'data'), { recursive: true });
-    fs.appendFileSync(path.join(__dirname, '..', '..', 'data', 'outbox.log'), line);
-    console.log(`[mail:dev] "${subject}" -> ${to} (SMTP not configured; see data/outbox.log)`);
+    try {
+      fs.mkdirSync(path.join(__dirname, '..', '..', 'data'), { recursive: true });
+      fs.appendFileSync(path.join(__dirname, '..', '..', 'data', 'outbox.log'), line);
+    } catch { /* read-only filesystem (serverless): the log line below is enough */ }
+    console.log(`[mail:dev] "${subject}" -> ${to} (SMTP not configured, email not sent)`);
     return;
   }
   try { await t.sendMail({ from, to, subject, html, replyTo }); }

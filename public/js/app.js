@@ -114,6 +114,19 @@
       $$('.thumbs button').forEach((x) => x.classList.toggle('on', x === b));
     }));
 
+    const thumbs = $$('.thumbs button');
+    let sx = null;
+    const main = $('.mainimg');
+    main.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+    main.addEventListener('touchend', (e) => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx; sx = null;
+      if (Math.abs(dx) < 40) return;
+      const i = thumbs.findIndex((b) => b.classList.contains('on'));
+      const n = Math.max(0, Math.min(thumbs.length - 1, i + (dx < 0 ? 1 : -1)));
+      if (n !== i) thumbs[n].click();
+    });
+
     let buyNow = false;
     $('#buyBtn').addEventListener('click', () => { buyNow = true; });
     $('#stickyAdd')?.addEventListener('click', () => form.requestSubmit($('#addBtn')));

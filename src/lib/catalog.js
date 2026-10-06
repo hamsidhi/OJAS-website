@@ -6,13 +6,15 @@ function hydrate(r) {
   return { ...r, colors: jparse(r.colors, []), sizes: jparse(r.sizes, []), extras: jparse(r.extras, []) };
 }
 
-function attach(products) {
+async function attach(products) {
   if (!products.length) return products;
   const ids = products.map((p) => p.id);
   const ph = ids.map(() => '?').join(',');
-  const imgs = db.prepare(`SELECT product_id, url FROM product_images WHERE product_id IN (${ph}) ORDER BY position, id`).all(...ids);
-  const rt = db.prepare(`SELECT product_id, AVG(rating) avg, COUNT(*) n FROM reviews WHERE status='approved' AND product_id IN (${ph}) GROUP BY product_id`).all(...ids);
-  const stock = db.prepare(`SELECT product_id, SUM(stock) s FROM variants WHERE product_id IN (${ph}) GROUP BY product_id`).all(...ids);
+  const [imgs, rt, stock] = await Promise.all([
+    db.all(`SELECT product_id, url FROM product_images WHERE product_id IN (${ph}) ORDER BY position, id`, ...ids),
+    db.all(`SELECT product_id, AVG(rating) avg, COUNT(*) n FROM reviews WHERE status='approved' AND product_id IN (${ph}) GROUP BY product_id`, ...ids),
+    db.all(`SELECT product_id, SUM(stock) s FROM variants WHERE product_id IN (${ph}) GROUP BY product_id`, ...ids),
+  ]);
   const im = {}, rm = {}, sm = {};
   imgs.forEach((i) => (im[i.product_id] ||= []).push(i.url));
   rt.forEach((r) => (rm[r.product_id] = r));
@@ -27,16 +29,16 @@ function attach(products) {
   return products;
 }
 
-function getBySlug(slug, includeInactive = false) {
-  const r = db.prepare(`SELECT * FROM products WHERE slug = ? ${includeInactive ? '' : 'AND active = 1'}`).get(slug);
-  return r ? attach([hydrate(r)])[0] : null;
+async function getBySlug(slug, includeInactive = false) {
+  const r = await db.get(`SELECT * FROM products WHERE slug = ? ${includeInactive ? '' : 'AND active = 1'}`, slug);
+  return r ? (await attach([hydrate(r)]))[0] : null;
 }
-function getById(id) {
-  const r = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
-  return r ? attach([hydrate(r)])[0] : null;
+async function getById(id) {
+  const r = await db.get('SELECT * FROM products WHERE id = ?', id);
+  return r ? (await attach([hydrate(r)]))[0] : null;
 }
 
-function list(opts = {}) {
+async function list(opts = {}) {
   const where = ['p.active = 1'], args = [];
   if (opts.category) { where.push('p.category = ?'); args.push(opts.category); }
   if (opts.q) {
@@ -54,15 +56,17 @@ function list(opts = {}) {
   if (vc.length) where.push(`EXISTS (SELECT 1 FROM variants v WHERE v.product_id = p.id AND v.stock > 0 AND ${vc.join(' AND ')})`);
   const order = { price_asc: 'p.price ASC', price_desc: 'p.price DESC', newest: 'p.id DESC', popular: 'p.sold DESC, p.featured DESC', name: 'p.name ASC' }[opts.sort] || 'p.sort ASC, p.id ASC';
   const w = where.join(' AND ');
-  const total = db.prepare(`SELECT COUNT(*) c FROM products p WHERE ${w}`).get(...args).c;
   const per = opts.perPage || 12, page = Math.max(1, opts.page || 1);
-  const rows = db.prepare(`SELECT p.* FROM products p WHERE ${w} ORDER BY ${order} LIMIT ? OFFSET ?`).all(...args, per, (page - 1) * per);
-  return { items: attach(rows.map(hydrate)), total, page, pages: Math.max(1, Math.ceil(total / per)), per };
+  const [tot, rows] = await Promise.all([
+    db.get(`SELECT COUNT(*) c FROM products p WHERE ${w}`, ...args),
+    db.all(`SELECT p.* FROM products p WHERE ${w} ORDER BY ${order} LIMIT ? OFFSET ?`, ...args, per, (page - 1) * per),
+  ]);
+  return { items: await attach(rows.map(hydrate)), total: tot.c, page, pages: Math.max(1, Math.ceil(tot.c / per)), per };
 }
 
 // colours + sizes + price range available across the active catalogue (for the filter sidebar)
-function facets() {
-  const rows = db.prepare('SELECT colors, sizes, price FROM products WHERE active = 1').all();
+async function facets() {
+  const rows = await db.all('SELECT colors, sizes, price FROM products WHERE active = 1');
   const colors = new Map(), sizes = new Set();
   let min = Infinity, max = 0;
   for (const r of rows) {
@@ -78,17 +82,15 @@ function facets() {
   };
 }
 
-function variantsFor(productId) {
-  return db.prepare('SELECT color, size, stock FROM variants WHERE product_id = ?').all(productId);
-}
-function categoryCounts() {
+const variantsFor = (productId) => db.all('SELECT color, size, stock FROM variants WHERE product_id = ?', productId);
+async function categoryCounts() {
   const m = {};
-  db.prepare('SELECT category, COUNT(*) c FROM products WHERE active = 1 GROUP BY category').all().forEach((r) => (m[r.category] = r.c));
+  (await db.all('SELECT category, COUNT(*) c FROM products WHERE active = 1 GROUP BY category')).forEach((r) => (m[r.category] = r.c));
   return m;
 }
-function categoryCovers() {
+async function categoryCovers() {
   const m = {};
-  db.prepare(`SELECT p.category, (SELECT url FROM product_images i WHERE i.product_id = p.id ORDER BY position LIMIT 1) url FROM products p WHERE p.active = 1 ORDER BY p.featured DESC, p.id`).all()
+  (await db.all(`SELECT p.category, (SELECT url FROM product_images i WHERE i.product_id = p.id ORDER BY position LIMIT 1) url FROM products p WHERE p.active = 1 ORDER BY p.featured DESC, p.id`))
     .forEach((r) => { if (!m[r.category] && r.url) m[r.category] = r.url; });
   return m;
 }

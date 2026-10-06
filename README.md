@@ -6,7 +6,7 @@ order. You manage everything from an admin panel.
 
 ## Run it
 
-Requires **Node.js 22.13 or newer** (you have it). No database to install.
+Requires **Node.js 22.13 or newer**. No database to install for local use.
 
 ```bash
 cd ojas-store
@@ -21,7 +21,7 @@ On first start the 52 products are loaded automatically. Default admin (change i
 `admin@ojas.example` / `ChangeMe123!` (set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` **before** the first start,
 or change the password later in *My account → Profile*).
 
-Test everything with `npm start` running, then in another terminal: `node tools/smoke-test.js`
+Test everything with `npm start` running, then in another terminal: `npm run test:smoke` (needs the local database)
 
 ## What customers get
 
@@ -73,21 +73,44 @@ card/UPI details never touch your server. Refunds are issued from the Razorpay/S
 Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (Gmail app password, Brevo, Zoho, SES, etc.) to send order
 confirmations, shipping updates and password-reset emails. Without SMTP, emails are written to `data/outbox.log`.
 
-## Hosting
+## Deploying on Vercel (what the live site uses)
 
-Any host that runs Node.js works (a small VPS, Render, Railway, Fly.io…). Requirements: HTTPS, set the `.env` values
-above, and keep these folders on **persistent storage**: `data/` (database) and `public/uploads/` (photos you upload).
-Back up `data/store.db` regularly. Run behind your host's HTTPS proxy (`NODE_ENV=production` already trusts one proxy).
+Vercel has no permanent disk, so the store uses a hosted **Turso** database (free, SQLite-compatible) for orders,
+accounts, products and sessions, and **Vercel Blob** for product photos you upload.
+
+1. **Turso database** – sign up at turso.tech, create a database (pick a region close to your Vercel region, e.g. Mumbai),
+   then copy its URL and create an auth token:
+   `turso db show --url <name>` and `turso db tokens create <name>`.
+2. **Load the catalogue once** from your computer (puts the 52 styles + admin account into Turso):
+   ```bash
+   # in ojas-store/.env set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN, then
+   npm run db:setup
+   ```
+3. **Vercel → Project → Storage → Create → Blob**, connect it to the project (adds `BLOB_READ_WRITE_TOKEN`).
+4. **Vercel → Project → Settings → Environment Variables** (Production *and* Preview), add:
+   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_SECRET` (long random text), `BASE_URL` (your site address, no trailing slash),
+   `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and later the Razorpay/Stripe/SMTP values. Keep `DEMO_PAYMENTS=true` only while testing.
+5. **Vercel → Settings → Deployment Protection**: turn **Vercel Authentication** off (otherwise visitors must log in to Vercel),
+   then redeploy.
+6. Open `/admin`, sign in, and work through the setup checklist on the dashboard.
+
+Notes: uploaded photos must be under ~4 MB each (Vercel request limit). The first visit after a long idle period is a little
+slower (cold start).
+
+### Other hosts
+Any Node.js host also works (Render, Railway, a VPS): `npm start`, with HTTPS and the `.env` values above. Without
+`TURSO_DATABASE_URL` it uses `data/store.db`, so keep `data/` and `public/uploads/` on persistent storage and back them up.
 
 ## Project layout
 
 ```
 server.js            app setup, security, sessions, CSRF
 src/routes/          shop, cart+checkout+payments, account, pages, admin, webhooks
-src/lib/             catalogue queries, cart, orders, payments (Razorpay/Stripe), email
+src/lib/             catalogue queries, cart, orders, payments (Razorpay/Stripe), email, photo storage
+api/index.js         Vercel entry point (vercel.json routes everything to the Express app)
 views/               pages (EJS);  views/admin = admin panel
 public/              css, js, logo, product photos (public/products/<style-code>/1-3.jpg)
-data/catalog.json    the 52 styles extracted from the PDF;  data/store.db = live database (created on first run)
+data/catalog.json    the 52 styles extracted from the PDF;  data/store.db = local development database
 tools/               build_catalog.py (re-extract from the PDF), smoke-test.js
 ```
 

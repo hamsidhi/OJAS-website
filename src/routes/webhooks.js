@@ -11,10 +11,10 @@ router.post('/razorpay', async (req, res) => {
     const pay = ev.payload && ev.payload.payment && ev.payload.payment.entity;
     if (pay && (ev.event === 'payment.captured' || ev.event === 'order.paid')) {
       const number = (pay.notes && pay.notes.order_number) || null;
-      const o = number && orders.get(number);
+      const o = number && (await orders.get(number));
       if (o && o.gateway_order_id === pay.order_id && pay.amount === o.total * 100) await orders.markPaid(number, { paymentId: pay.id, baseUrl: process.env.BASE_URL || '' });
     }
-  } catch (e) { console.error('[razorpay webhook]', e); }
+  } catch (e) { console.error('[razorpay webhook]', e); return res.status(500).json({ ok: false }); }
   res.json({ ok: true });
 });
 
@@ -24,10 +24,10 @@ router.post('/stripe', async (req, res) => {
   try {
     const s = ev.data && ev.data.object;
     if (ev.type === 'checkout.session.completed' && s && s.payment_status === 'paid') {
-      const o = orders.get(s.client_reference_id);
+      const o = await orders.get(s.client_reference_id);
       if (o && s.amount_total === o.total * 100) await orders.markPaid(o.number, { paymentId: s.payment_intent, baseUrl: process.env.BASE_URL || '' });
-    } else if (ev.type === 'checkout.session.expired' && s) orders.markFailed(s.client_reference_id);
-  } catch (e) { console.error('[stripe webhook]', e); }
+    } else if (ev.type === 'checkout.session.expired' && s) await orders.markFailed(s.client_reference_id);
+  } catch (e) { console.error('[stripe webhook]', e); return res.status(500).json({ ok: false }); }
   res.json({ received: true });
 });
 

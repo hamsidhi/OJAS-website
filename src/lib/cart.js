@@ -4,17 +4,17 @@ const { int } = require('./util');
 const MAX_QTY = 10;
 const keyOf = (pid, color, size) => `${pid}|${color}|${size}`;
 
-function raw(req) { return (req.session.cart ||= []); }
+const raw = (req) => (req.session.cart ||= []);
 
-function stockFor(pid, color, size) {
-  const r = db.prepare('SELECT stock FROM variants WHERE product_id = ? AND color = ? AND size = ?').get(pid, color, size);
+async function stockFor(pid, color, size) {
+  const r = await db.get('SELECT stock FROM variants WHERE product_id = ? AND color = ? AND size = ?', pid, color, size);
   return r ? r.stock : null;
 }
 
-function add(req, pid, color, size, qty) {
-  const p = db.prepare('SELECT id, active FROM products WHERE id = ?').get(pid);
+async function add(req, pid, color, size, qty) {
+  const p = await db.get('SELECT id, active FROM products WHERE id = ?', pid);
   if (!p || !p.active) return { ok: false, error: 'This product is no longer available.' };
-  const stock = stockFor(pid, color, size);
+  const stock = await stockFor(pid, color, size);
   if (stock === null) return { ok: false, error: 'Please choose a colour and size.' };
   if (stock <= 0) return { ok: false, error: 'Sorry, that colour/size is sold out.' };
   const cart = raw(req), key = keyOf(pid, color, size);
@@ -27,12 +27,12 @@ function add(req, pid, color, size, qty) {
   if (line) line.qty = want; else cart.push({ key, pid, color, size, qty: want });
   return { ok: true };
 }
-function setQty(req, key, qty) {
+async function setQty(req, key, qty) {
   const cart = raw(req), i = cart.findIndex((l) => l.key === key);
   if (i < 0) return;
   if (qty <= 0) cart.splice(i, 1);
   else {
-    const l = cart[i], stock = stockFor(l.pid, l.color, l.size) || 0;
+    const l = cart[i], stock = (await stockFor(l.pid, l.color, l.size)) || 0;
     l.qty = Math.max(1, Math.min(MAX_QTY, qty, stock || 1));
   }
 }
@@ -40,18 +40,17 @@ function remove(req, key) { req.session.cart = raw(req).filter((l) => l.key !== 
 function clear(req) { req.session.cart = []; delete req.session.coupon; }
 
 // Expand the session cart into priced lines using live DB data (never trust prices from the browser).
-function lines(req) {
+async function lines(req) {
   const out = [], keep = [];
   for (const l of raw(req)) {
-    const p = db.prepare('SELECT id, code, slug, name, price, mrp, active FROM products WHERE id = ?').get(l.pid);
+    const p = await db.get('SELECT id, code, slug, name, price, mrp, active, colors FROM products WHERE id = ?', l.pid);
     if (!p || !p.active) continue;
-    const stock = stockFor(l.pid, l.color, l.size);
+    const stock = await stockFor(l.pid, l.color, l.size);
     if (stock === null) continue;
     const qty = Math.min(l.qty, Math.max(stock, 0));
-    const img = db.prepare('SELECT url FROM product_images WHERE product_id = ? ORDER BY position LIMIT 1').get(p.id);
-    const hex = (db.prepare('SELECT colors FROM products WHERE id = ?').get(p.id) || {}).colors;
+    const img = await db.get('SELECT url FROM product_images WHERE product_id = ? ORDER BY position LIMIT 1', p.id);
     let swatch = '#ccc';
-    try { swatch = (JSON.parse(hex).find((c) => c.name === l.color) || {}).hex || '#ccc'; } catch {}
+    try { swatch = (JSON.parse(p.colors).find((c) => c.name === l.color) || {}).hex || '#ccc'; } catch {}
     keep.push({ ...l, qty: qty || l.qty });
     out.push({ key: l.key, pid: p.id, code: p.code, slug: p.slug, name: p.name, color: l.color, swatch, size: l.size, price: p.price, mrp: p.mrp,
       qty: qty || l.qty, stock, soldOut: stock <= 0, short: stock > 0 && l.qty > stock, image: img ? img.url : null, line: p.price * (qty || l.qty) });
@@ -60,9 +59,9 @@ function lines(req) {
   return out;
 }
 
-function validateCoupon(code, subtotal) {
+async function validateCoupon(code, subtotal) {
   if (!code) return { ok: false };
-  const c = db.prepare('SELECT * FROM coupons WHERE code = ?').get(String(code).trim());
+  const c = await db.get('SELECT * FROM coupons WHERE code = ?', String(code).trim());
   if (!c || !c.active) return { ok: false, error: 'That coupon code is not valid.' };
   if (c.expires_at && new Date(c.expires_at) < new Date()) return { ok: false, error: 'That coupon has expired.' };
   if (c.max_uses && c.used >= c.max_uses) return { ok: false, error: 'That coupon has been fully used.' };
@@ -71,14 +70,14 @@ function validateCoupon(code, subtotal) {
   return { ok: true, code: c.code, discount: Math.min(amount, subtotal), label: c.type === 'percent' ? `${c.value}% off` : `₹${c.value} off` };
 }
 
-function totals(req, method) {
+async function totals(req, method) {
   const s = getSettings();
-  const items = lines(req);
+  const items = await lines(req);
   const subtotal = items.reduce((a, i) => a + i.line, 0);
   const count = items.reduce((a, i) => a + i.qty, 0);
   let coupon = null, discount = 0;
   if (req.session.coupon) {
-    const v = validateCoupon(req.session.coupon, subtotal);
+    const v = await validateCoupon(req.session.coupon, subtotal);
     if (v.ok) { coupon = v; discount = v.discount; } else delete req.session.coupon;
   }
   const after = subtotal - discount;

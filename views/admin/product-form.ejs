@@ -42,7 +42,7 @@
         </div></div>
       <div class="panel"><h3>Photos</h3>
         <% if (!isNew && p.imageRows.length) { %><div class="imgs-edit"><% p.imageRows.forEach(i => { %><figure><img src="<%= i.url %>" alt=""><label class="check small" style="margin-top:4px"><input type="checkbox" name="delete_img" value="<%= i.id %>"> Delete</label><input type="number" name="pos_<%= i.id %>" value="<%= i.position %>" aria-label="Order" style="padding:4px 6px;margin-top:4px"></figure><% }) %></div><div class="help">Lowest number is the main photo.</div><% } %>
-        <label class="f" for="images" style="margin-top:14px">Add photos (JPG, PNG, WebP, max 6MB each)</label>
+        <label class="f" for="images" style="margin-top:14px">Add photos (JPG, PNG, WebP, max 4MB each)</label>
         <input id="images" type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple>
       </div>
       <button class="btn block" type="submit">Save product</button>

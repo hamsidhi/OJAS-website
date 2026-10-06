@@ -84,6 +84,14 @@ const stock = (pid, color, size) => db.prepare('SELECT stock FROM variants WHERE
   ok(db.prepare('SELECT status FROM orders WHERE number=?').get(num).status === 'cancelled', 'admin cancels order');
   ok(stock(p.id, 'Black', 'M') === before, 'stock restored after cancel');
 
+  for (const u of ['/admin', '/admin/orders', '/admin/products', '/admin/products/1', '/admin/products/new', '/admin/customers', '/admin/reviews', '/admin/messages', '/admin/coupons', '/admin/settings', '/admin/orders/export.csv']) {
+    r = await a.get(u); ok(r.status === 200, 'admin page ' + u);
+  }
+  const fd = new FormData();
+  Object.entries({ id: '', name: 'Smoke Item', code: 'SMK' + (Date.now() % 100000), category: 'Shorts', colors: 'Black #111111\nRose #cc6688', sizes: 'S, M', default_stock: '3', price: '500', active: '1' }).forEach(([k, v]) => fd.append(k, v));
+  r = await fetch(BASE + '/admin/products/save?_csrf=' + a.csrf, { method: 'POST', headers: { Cookie: a.cookie }, body: fd, redirect: 'manual' });
+  ok(r.status === 302 && /\/admin\/products\/\d+/.test(r.headers.get('location')), 'admin creates a product (multipart)');
+
   console.log(fails ? `\n${fails} check(s) FAILED` : '\nAll checks passed');
   process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });

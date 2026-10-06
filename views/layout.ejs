@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title><%= title %></title>
 <% if (metaDesc) { %><meta name="description" content="<%= metaDesc %>"><% } %>
 <meta property="og:title" content="<%= title %>">
@@ -12,7 +12,7 @@
 <link rel="icon" href="/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/style.css?v=1">
+<link rel="stylesheet" href="/css/style.css?v=2">
 </head>
 <body data-csrf="<%= csrf %>" data-logged="<%= user ? 1 : 0 %>">
 <%- include('partials/icons') %>
@@ -97,6 +97,6 @@
 </footer>
 <% if (settings.whatsapp) { %><a class="wa no-print" href="https://wa.me/<%= settings.whatsapp %>?text=<%= encodeURIComponent('Hi ' + settings.store_name + ', I have a question.') %>" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><svg><use href="#i-wa"/></svg></a><% } %>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/js/app.js?v=1" defer></script>
+<script src="/js/app.js?v=2" defer></script>
 </body>
 </html>
