@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "db:setup": "node src/seed.js",
-    "test:smoke": "node tools/smoke-test.js"
+    "test:smoke": "node tools/smoke-test.js",
+    "admin:set": "node tools/set-admin.js"
   },
   "type": "commonjs",
   "dependencies": {

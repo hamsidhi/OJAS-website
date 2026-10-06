@@ -4,3 +4,4 @@ data/store.db*
 data/outbox.log
 public/uploads
 vercel-env.txt
+vercel-env.txt
