@@ -9,14 +9,16 @@ let done = null;
 
 async function run() {
   await init();
-  const count = (await db.get('SELECT COUNT(*) c FROM products')).c;
-  if (count === 0) {
+  const have = new Set((await db.all('SELECT code FROM products')).map((r) => r.code));
+  const seeded = await db.get("SELECT 1 x FROM settings WHERE key = 'catalog_seeded'");
+  if (!seeded) { // resumable: skips styles already loaded if an earlier first run was interrupted
     const file = path.join(__dirname, '..', 'data', 'catalog.json');
     if (fs.existsSync(file)) {
       const items = JSON.parse(fs.readFileSync(file, 'utf8'));
       // products first (need their ids), then images + variants in batches
       for (let i = 0; i < items.length; i++) {
         const p = items[i];
+        if (have.has(p.code)) continue;
         const r = await db.run(`INSERT INTO products(code,slug,name,category,description,composition,extras,colors,sizes,price,mrp,active,featured,is_new,sort)
           VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)`, p.code, p.slug, p.name, p.category, p.description, p.composition, JSON.stringify(p.extras),
           JSON.stringify(p.colors), JSON.stringify(p.sizes), p.price, p.mrp, i % 6 === 0 ? 1 : 0, i < 12 ? 1 : 0, i);
@@ -24,6 +26,7 @@ async function run() {
         for (const c of p.colors) for (const s of p.sizes) stmts.push(['INSERT INTO variants(product_id,color,size,stock) VALUES(?,?,?,?)', r.lastInsertRowid, c.name, s, DEFAULT_STOCK]);
         await db.batch(stmts);
       }
+      await db.run("INSERT OR REPLACE INTO settings(key,value) VALUES('catalog_seeded','1')");
       console.log(`[seed] loaded ${items.length} products`);
     } else console.warn('[seed] data/catalog.json not found. Run tools/build_catalog.py');
   }
