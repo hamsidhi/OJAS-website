@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const remote = !!process.env.TURSO_DATABASE_URL;
 let url = process.env.TURSO_DATABASE_URL;
+if (!url && process.env.VERCEL) throw new Error('TURSO_DATABASE_URL is not set. Add TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel > Settings > Environment Variables, then redeploy.');
 if (!url) {
   const file = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'store.db');
   fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
